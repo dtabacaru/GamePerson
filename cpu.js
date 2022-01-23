@@ -1,27 +1,46 @@
-var CLK_F    = 4.194304e6;     // Clock frequency (Hz)
-var RAM_SIZE = 8 * 1024;       // 8 KB
-var RAM = new Array(RAM_SIZE); // The emulated RAM space
-var ROM = [];                  // The emulated ROM space
+const CLK_F    = 4.194304e6;     // Clock frequency (Hz)
+const RAM_SIZE = 8 * 1024;       // 8 KB
 
-var SP = 0;      // Stack pointer
-var PC = 0x0100; // Program counter
+var RamSpace = new Array(RAM_SIZE);
+var RomSpace = [];
 
-var REGISTERS = [];
-REGISTERS["AF"] = 0; // A = Accumulator; F = Flag
-REGISTERS["BC"] = 0; // Gen storage
-REGISTERS["DE"] = 0; // Gen storage
-REGISTERS["HL"] = 0; // Gen storage / memory pointer
+var StackPointer   = 0;
+var ProgramCounter = 0x0100;
 
-function IncrementCounter() {
-    PC += 1; // CPU is 8 bit = 1 byte
+var CpuRegisters = [];
+CpuRegisters["AF"] = 0; // A = Accumulator; F = Flag
+CpuRegisters["BC"] = 0; // Gen storage
+CpuRegisters["DE"] = 0; // Gen storage
+CpuRegisters["HL"] = 0; // Gen storage / memory pointer
+
+function RunGamePerson() {
+    // Main CPU loop
+    while (true) {
+        // TODO: Read in rom here
+        let delay = ProcessInstruction(Get8BitValue());
+        // TODO: Wait for delay time before next instruction
+    }
 }
 
+function Get8BitValue() {
+    let byte_val = ROM[PC];
+    PC += 1; // 8 bit cpu = 1 byte increments
+    return byte_val;
+}
+
+function Get16BitValue() {
+    return Get8BitValue() + (Get8BitValue() >> 8);
+}
+
+// TODO: Return how long to wait before next instruction
 function ProcessInstruction(op) {
     switch (op) {
 
         case 0x00:
+            // NOP - do nothing
             break;
         case 0x01:
+            CpuRegisters["BC"] = Get16BitValue();
             break;
         case 0x02:
             break;
