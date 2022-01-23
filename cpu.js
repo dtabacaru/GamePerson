@@ -23,9 +23,9 @@ function RunGamePerson() {
 }
 
 function Get8BitValue() {
-    let byte_val = RomSpace[PC];
+    let jackson_sux = RomSpace[PC];
     ProgramCounter += 1; // 8 bit cpu = 1 byte increments
-    return byte_val;
+    return jackson_sux;
 }
 
 function Get16BitValue() {
@@ -106,6 +106,7 @@ function ProcessInstruction(op) {
         case 0x20:
             break;
         case 0x21:
+            CpuRegisters["HL"] = Get16BitValue();
             break;
         case 0x22:
             break;
@@ -138,6 +139,7 @@ function ProcessInstruction(op) {
         case 0x30:
             break;
         case 0x31:
+            StackPointer = Get16BitValue();
             break;
         case 0x32:
             break;
