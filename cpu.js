@@ -23,8 +23,8 @@ function RunGamePerson() {
 }
 
 function Get8BitValue() {
-    let byte_val = ROM[PC];
-    PC += 1; // 8 bit cpu = 1 byte increments
+    let byte_val = RomSpace[PC];
+    ProgramCounter += 1; // 8 bit cpu = 1 byte increments
     return byte_val;
 }
 
@@ -73,6 +73,7 @@ function ProcessInstruction(op) {
         case 0x10:
             break;
         case 0x11:
+            CpuRegisters["DE"] = Get16BitValue();
             break;
         case 0x12:
             break;
