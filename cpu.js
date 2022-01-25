@@ -2,8 +2,9 @@ const CLK_F         = 4.194304e6; // Clock frequency (Hz)
 const RAM_SIZE      = 8 * 1024;   // 8 KB
 const REGISTER_SIZE = 2;          // Bytes
 
-var RamSpace = new Array(RAM_SIZE);
-var RomSpace = [];
+var RamSpace  = new Uint8Array(RAM_SIZE);
+var RomSpace  = [];
+var RomReader = new FileReader();
 
 var StackPointer   = 0;
 var ProgramCounter = 0x0100;  // ROM application starts at 0x0100
@@ -13,17 +14,27 @@ var RegisterBC = 0; // Gen storage; B = High, C = Low
 var RegisterDE = 0; // Gen storage; D = High, E = Low
 var RegisterHL = 0; // Gen storage / memory pointer; H = High, L = Low
 
+function ReadRom() {
+    RomReader.onload = function () 
+    {
+        RunGamePerson();
+    };
+
+    RomReader.readAsArrayBuffer(document.getElementById("RomFileInput").files[0]);
+}
+
 function RunGamePerson() {
+    RomSpace = new Uint8Array(RomReader.result);
+
     // Main CPU loop
     while (true) {
-        // TODO: Read in rom here
         let delay = ProcessInstruction(Get8BitValue());
         // TODO: Wait for delay time before next instruction
     }
 }
 
 function Get8BitValue() {
-    let jackson_sux = RomSpace[PC];
+    let jackson_sux = RomSpace[ProgramCounter];
     ProgramCounter += 1; // 8 bit cpu = 1 byte increments
     return jackson_sux;
 }
