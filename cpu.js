@@ -29,7 +29,7 @@ function Get8BitValue() {
 }
 
 function Get16BitValue() {
-    return Get8BitValue() + (Get8BitValue() >> 8);
+    return Get8BitValue() + (Get8BitValue() << 8);
 }
 
 // TODO: Return how long to wait before next instruction
@@ -58,7 +58,7 @@ function ProcessInstruction(op) {
             break;
         case 0x06:
             // LD B, d8
-            RegisterBC = (RegisterBC & 0xFF) + (Get8BitValue() >> 8);
+            RegisterBC = (RegisterBC & 0xFF) + (Get8BitValue() << 8);
             break;
         case 0x07:
             // RLCA
@@ -72,7 +72,7 @@ function ProcessInstruction(op) {
             break;
         case 0x0A:
             // LD A, (BC)
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterBC & 0xFF);
+            RegisterAF = (RegisterAF & 0xFF) + ((RegisterBC & 0xFF) << 8);
             break;
         case 0x0B:
             // DEC BC
@@ -112,7 +112,7 @@ function ProcessInstruction(op) {
             break;
         case 0x16:
             // LD D, d8
-            RegisterDE = (RegisterDE & 0xFF) + (Get8BitValue() >> 8);
+            RegisterDE = (RegisterDE & 0xFF) + (Get8BitValue() << 8);
             break;
         case 0x17:
             // RLA
@@ -125,7 +125,7 @@ function ProcessInstruction(op) {
             break;
         case 0x1A:
             // LD A, (DE)
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterDE & 0xFF);
+            RegisterAF = (RegisterAF & 0xFF) + ((RegisterDE & 0xFF) << 8);
             break;
         case 0x1B:
             // DEC DE
@@ -166,7 +166,7 @@ function ProcessInstruction(op) {
             break;
         case 0x26:
             // LD H, d8
-            RegisterHL = (RegisterHL & 0xFF) + (Get8BitValue() >> 8);
+            RegisterHL = (RegisterHL & 0xFF) + (Get8BitValue() << 8);
             break;
         case 0x27:
             // DAA
@@ -250,7 +250,7 @@ function ProcessInstruction(op) {
             break;
         case 0x3E:
             // LD A, d8
-            RegisterAF = (RegisterAF & 0xFF) + (Get8BitValue() >> 8);
+            RegisterAF = (RegisterAF & 0xFF) + (Get8BitValue() << 8);
             break;
         case 0x3F:
             // CCF
