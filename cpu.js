@@ -17,6 +17,7 @@ var RegisterHL = 0; // Gen storage / memory pointer; H = High, L = Low
 function ReadRom() {
     RomReader.onload = function () 
     {
+        RomSpace = new Uint8Array(RomReader.result);
         RunGamePerson();
     };
 
@@ -24,8 +25,6 @@ function ReadRom() {
 }
 
 function RunGamePerson() {
-    RomSpace = new Uint8Array(RomReader.result);
-
     // Main CPU loop
     while (true) {
         let delay = ProcessInstruction(Get8BitValue());
