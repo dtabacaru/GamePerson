@@ -11,7 +11,7 @@
 		<img src="gameperson.png" width="286px"></img>
 	</div>
 	<div style = "text-align:center; ">
-		<canvas id="lifeGrid" 
+		<canvas id="GamePersonCanvas" 
 				width="160px" 
 				height="144px" 
 			    style="position: absolute; 
@@ -26,6 +26,12 @@
 	<script type="text/javascript" src="spu.js"></script>
 	<script type="text/javascript" src="input.js"></script>
 	<script type="text/javascript" src="gameperson.js"></script>
+
+	<div style="position: absolute; 
+				top: 500; 
+				left: 0; ">
+		<input type="file" id="RomFileInput" onchange="ReadRom()"/>
+	</div>
 
 </body>
 </html>
