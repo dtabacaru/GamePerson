@@ -9,14 +9,6 @@ var RamSpace  = new Uint8Array(RAM_SIZE);
 var RomSpace  = [];
 var RomReader = new FileReader();
 
-var StackPointer   = 0;
-var ProgramCounter = 0x0100;  // ROM application starts at 0x0100
-
-var RegisterAF = 0; // A = Accumulator; F = Flag; A = High, F = Low
-var RegisterBC = 0; // Gen storage; B = High, C = Low
-var RegisterDE = 0; // Gen storage; D = High, E = Low
-var RegisterHL = 0; // Gen storage / memory pointer; H = High, L = Low
-
 function ReadRom() {
     RomReader.onload = function () 
     {
@@ -46,7 +38,7 @@ function Get16BitValue() {
 }
 
 // https://gbdev.gg8.se/wiki/articles/Memory_Map
-// control: 0=8bit,1=16bit
+// control: 0=8bit, 1=16bit
 // TODO: Implement me!
 function ReadAddress(address, control) {
     if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
@@ -86,8 +78,8 @@ function ReadAddress(address, control) {
 
 // https://gbdev.gg8.se/wiki/articles/Memory_Map
 // TODO: Implement me!
-// control: 0=8bit,1=16bit
-function WriteAddress(address, control, val) {
+// control: 0=8bit, 1=16bit
+function WriteAddress(address, val, control) {
 
     //TODO: val check? handle rollover here?
 
@@ -135,151 +127,151 @@ function WriteAddress(address, control, val) {
 // TODO: Fix LD instructions that load from memory address
 function ProcessInstruction(op) {
     switch (op) {
-
+        // NOP
         case 0x00:
-            // NOP
             break;
+        // LD BC, d16
         case 0x01:
-            // LD BC, d16
             RegisterBC = Get16BitValue();
             break;
+        // LD (BC), A
         case 0x02:
-            // LD (BC), A
-            RegisterBC = RegisterAF >> 8;
+            WriteAddress(RegisterBC, ReadRegisterA(), BITS_8);
             break;
+        // INC BC
         case 0x03:
-            // INC BC
             break;
+        // INC B
         case 0x04:
-            // INC B
             break;
+        // DEC B
         case 0x05:
-            // DEC B
             break;
+        // LD B, d8
         case 0x06:
-            // LD B, d8
-            RegisterBC = (RegisterBC & 0xFF) + (Get8BitValue() << 8);
+            WriteRegisterB(Get8BitValue());
             break;
+        // RLCA    
         case 0x07:
-            // RLCA
             break;
+        // LD (a16), SP
         case 0x08:
-            // LD (a16), SP
-            // TODO: Implement memory map
+            WriteAddress(Get16BitValue(), StackPointer, BITS_16);
             break;
+        // ADD HL, BC
         case 0x09:
-            // ADD HL, BC
             break;
+        // LD A, (BC)
         case 0x0A:
-            // LD A, (BC)
-            RegisterAF = (RegisterAF & 0xFF) + (ReadAddress(RegisterBC, BITS_8) << 8);
+            WriteRegisterA(ReadAddress(RegisterBC, BITS_8));
             break;
+        // DEC BC
         case 0x0B:
-            // DEC BC
             break;
+        // INC C
         case 0x0C:
-            // INC C
             break;
+        // DEC C
         case 0x0D:
-            // DEC C
             break;
+        // LD C, d8
         case 0x0E:
-            // LD C, d8
-            RegisterBC = Get8BitValue() + (RegisterBC & 0xFF00);
+            WriteRegisterC(Get8BitValue());
             break;
+        // RRCA
         case 0x0F:
-            // RRCA
             break;
+        // STOP
         case 0x10:
-            // STOP
             break;
+        // LD DE, d16
         case 0x11:
-            // LD DE, d16
             RegisterDE = Get16BitValue();
             break;
+        // LD(DE), A
         case 0x12:
-            // LD(DE), A
-            RegisterDE = RegisterAF >> 8;
+            WriteAddress(RegisterDE, ReadRegisterA(), BITS_8);
             break;
+        // INC DE
         case 0x13:
-            // INC DE
             break;
+        // INC D
         case 0x14:
-            // INC D
             break;
+        // DEC D
         case 0x15:
-            // DEC D
             break;
+        // LD D, d8
         case 0x16:
-            // LD D, d8
-            RegisterDE = (RegisterDE & 0xFF) + (Get8BitValue() << 8);
+            WriteRegisterD(Get8BitValue());
             break;
+        // RLA
         case 0x17:
-            // RLA
             break;
+        // JR s8
         case 0x18:
-            // JR s8
             break;
+        // ADD HL, DE
         case 0x19:
-            // ADD HL, DE
             break;
+        // LD A, (DE)
         case 0x1A:
-            // LD A, (DE)
-            RegisterAF = (RegisterAF & 0xFF) + ((RegisterDE & 0xFF) << 8);
+            WriteRegisterA(ReadAddress(ReadRegisterDE, BITS_8));
             break;
+        // DEC DE
         case 0x1B:
-            // DEC DE
             break;
+        // INC E
         case 0x1C:
-            // INC E
             break;
+        // DEC E
         case 0x1D:
-            // DEC E
             break;
+        // LD E, d8
         case 0x1E:
-            // LD E, d8
-            RegisterDE = Get8BitValue() + (RegisterDE & 0xFF00);
+            WriteRegisterE(Get8BitValue());
             break;
+        // RRA
         case 0x1F:
-            // RRA
             break;
+        // JR NZ, s8
         case 0x20:
-            // JR NZ, s8
             break;
+        // LD HL, d16
         case 0x21:
-            // LD HL, d16
             RegisterHL = Get16BitValue();
             break;
+        // LD (HL+), A
         case 0x22:
-            // LD (HL+), A
-            // TODO: Carry flags? Overflow?
-            RegisterHL = (RegisterAF >> 8) + 1;
+            // TODO: Carry flags? Overflow? Increment address or register?
+            WriteAddress(ReadRegisterHL(), ReadRegisterA(), BITS_8);
+            RegisterHL += 1;
             break;
+        // INC HL
         case 0x23:
-            // INC HL
             break;
+        // INC H
         case 0x24:
-            // INC H
             break;
+        // DEC H
         case 0x25:
-            // DEC H
             break;
+        // LD H, d8
         case 0x26:
-            // LD H, d8
-            RegisterHL = (RegisterHL & 0xFF) + (Get8BitValue() << 8);
+            WriteRegisterH(Get8BitValue());
             break;
+        // DAA
         case 0x27:
-            // DAA
             break;
+        // JR Z, s8
         case 0x28:
-            // JR Z, s8
             break;
+        // ADD HL, HL
         case 0x29:
-            // ADD HL, HL
             break;
+        // LD A, (HL+)
         case 0x2A:
-            // LD A, (HL +)
-            // TODO: Carry flags? Overflow?
+            // TODO: Carry flags? Overflow? Increment address or register?
             RegisterAF = (RegisterAF & 0xFF) + (RegisterHL & 0xFF);
             RegisterHL += 1;
             break;
