@@ -42,6 +42,49 @@ function Get16BitValue() {
     return Get8BitValue() + (Get8BitValue() << 8);
 }
 
+// https://gbdev.gg8.se/wiki/articles/Memory_Map
+// TODO: Implement me!
+function Read8BitMemory(address) {
+    if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
+
+    } else if (address > 0xFF7F) { // (FF80-FFFE)	High RAM (HRAM)
+
+    } else if (address > 0xFEFF) { // (FF00-FF7F)	I/O Registers
+
+    } else if (address > 0xFE9F) { // (FEA0-FEFF)	Not Usable
+
+    } else if (address > 0xFDFF) { // (FE00-FE9F)	Sprite attribute table (OAM)
+
+    } else if (address > 0xDFFF) { // (E000-FDFF)	Mirror of C000~DDFF (ECHO RAM)	Typically not used
+
+    } else if (address > 0xCFFF) { // (D000-DFFF)	4KB Work RAM (WRAM) bank 1~N	Only bank 1 in Non-CGB mode
+
+    } else if (address > 0xBFFF) { // (C000-CFFF)	4KB Work RAM (WRAM) bank 0	
+
+    } else if (address > 0x9FFF) { // (A000-BFFF)    8KB External RAM	In cartridge, switchable bank if any
+
+    } else if (address > 0x7FFF) { // (8000-9FFF)	8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
+
+    } else { // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
+        return RomSpace[address];
+    }
+}
+
+// TODO: Implement me!
+function Read16BitMemory(address, control, val) {
+    
+}
+
+// TODO: Implement me!
+function Write8BitMemory(address, control, val) {
+    
+}
+
+// TODO: Implement me!
+function Write16BitMemory(address, control, val) {
+    
+}
+
 // TODO: Return how long to wait before next instruction
 function ProcessInstruction(op) {
     switch (op) {
@@ -82,7 +125,7 @@ function ProcessInstruction(op) {
             break;
         case 0x0A:
             // LD A, (BC)
-            RegisterAF = (RegisterAF & 0xFF) + ((RegisterBC & 0xFF) << 8);
+            RegisterAF = (RegisterAF & 0xFF) + Read8BitMemory(RegisterBC);
             break;
         case 0x0B:
             // DEC BC
