@@ -47,23 +47,21 @@ function Get16BitValue() {
 function Read8BitMemory(address) {
     if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
 
-    } else if (address > 0xFF7F) { // (FF80-FFFE)	High RAM (HRAM)
+    } else if (address > 0xFF7F) { // (FF80-FFFE)   High RAM (HRAM)
 
-    } else if (address > 0xFEFF) { // (FF00-FF7F)	I/O Registers
+    } else if (address > 0xFEFF) { // (FF00-FF7F)   I/O Registers
 
-    } else if (address > 0xFE9F) { // (FEA0-FEFF)	Not Usable
+    } else if (address > 0xFE9F) { // (FEA0-FEFF)   Not Usable
 
-    } else if (address > 0xFDFF) { // (FE00-FE9F)	Sprite attribute table (OAM)
+    } else if (address > 0xFDFF) { // (FE00-FE9F)   Sprite attribute table (OAM)
 
-    } else if (address > 0xDFFF) { // (E000-FDFF)	Mirror of C000~DDFF (ECHO RAM)	Typically not used
+    } else if (address > 0xDFFF) { // (E000-FDFF)   Mirror of C000~DDFF (ECHO RAM)	Typically not used
 
-    } else if (address > 0xCFFF) { // (D000-DFFF)	4KB Work RAM (WRAM) bank 1~N	Only bank 1 in Non-CGB mode
+    } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1	
+        return RamSpace[address - 0xC000];
+    } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
 
-    } else if (address > 0xBFFF) { // (C000-CFFF)	4KB Work RAM (WRAM) bank 0	
-
-    } else if (address > 0x9FFF) { // (A000-BFFF)    8KB External RAM	In cartridge, switchable bank if any
-
-    } else if (address > 0x7FFF) { // (8000-9FFF)	8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
+    } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
 
     } else { // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
         return RomSpace[address];
