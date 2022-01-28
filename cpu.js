@@ -172,7 +172,7 @@ function ProcessInstruction(op) {
             break;
         case 0x0A:
             // LD A, (BC)
-            RegisterAF = (RegisterAF & 0xFF) + ReadAddress(RegisterBC, BITS_8);
+            RegisterAF = (RegisterAF & 0xFF) + (ReadAddress(RegisterBC, BITS_8) << 8);
             break;
         case 0x0B:
             // DEC BC
