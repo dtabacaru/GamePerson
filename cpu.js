@@ -2,6 +2,9 @@ const CLK_F         = 4.194304e6; // Clock frequency (Hz)
 const RAM_SIZE      = 8 * 1024;   // 8 KB
 const REGISTER_SIZE = 2;          // Bytes
 
+const BITS_8  = 0;
+const BITS_16 = 1;
+
 var RamSpace  = new Uint8Array(RAM_SIZE);
 var RomSpace  = [];
 var RomReader = new FileReader();
@@ -42,7 +45,94 @@ function Get16BitValue() {
     return Get8BitValue() + (Get8BitValue() << 8);
 }
 
+// https://gbdev.gg8.se/wiki/articles/Memory_Map
+// control: 0=8bit,1=16bit
+// TODO: Implement me!
+function ReadAddress(address, control) {
+    if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
+
+    } else if (address > 0xFF7F) { // (FF80-FFFE)   High RAM (HRAM)
+
+    } else if (address > 0xFEFF) { // (FF00-FF7F)   I/O Registers
+
+    } else if (address > 0xFE9F) { // (FEA0-FEFF)   Not Usable
+
+    } else if (address > 0xFDFF) { // (FE00-FE9F)   Sprite attribute table (OAM)
+
+    } else if (address > 0xDFFF) { // (E000-FDFF)   Mirror of C000~DDFF (ECHO RAM)	Typically not used
+
+    } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1	
+        address -= 0xC000;
+        switch (control) {
+            case 0:
+                return RamSpace[address];
+            case 1:
+                return RamSpace[address] + (RomSpace[address] << 8);
+        }
+    } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
+
+    } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
+
+    } else { // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
+        switch (control) {
+            case 0:
+                return RomSpace[address];
+            case 1:
+                return RomSpace[address] + (RomSpace[address] << 8);
+        }
+        
+    }
+}
+
+// https://gbdev.gg8.se/wiki/articles/Memory_Map
+// TODO: Implement me!
+// control: 0=8bit,1=16bit
+function WriteAddress(address, control, val) {
+
+    //TODO: val check? handle rollover here?
+
+    if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
+
+    } else if (address > 0xFF7F) { // (FF80-FFFE)   High RAM (HRAM)
+
+    } else if (address > 0xFEFF) { // (FF00-FF7F)   I/O Registers
+
+    } else if (address > 0xFE9F) { // (FEA0-FEFF)   Not Usable
+
+    } else if (address > 0xFDFF) { // (FE00-FE9F)   Sprite attribute table (OAM)
+
+    } else if (address > 0xDFFF) { // (E000-FDFF)   Mirror of C000~DDFF (ECHO RAM)	Typically not used
+
+    } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1
+        address -= 0xC000;
+        switch (control) {
+            case 0:
+                RomSpace[address] = val;
+                return;
+            case 1:
+                RomSpace[address]   = val & 0x00FF;
+                RomSpace[address+1] = val & 0xFF00;
+                return;
+        }
+    } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
+
+    } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
+
+    } else { // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
+        switch (control) {
+            case 0:
+                RomSpace[address] = val;
+                return;
+            case 1:
+                RomSpace[address]   = val & 0x00FF;
+                RomSpace[address+1] = val & 0xFF00;
+                return;
+        }
+    }
+}
+
 // TODO: Return how long to wait before next instruction
+// TODO: Fix LD instructions that load from memory address
 function ProcessInstruction(op) {
     switch (op) {
 
@@ -82,7 +172,7 @@ function ProcessInstruction(op) {
             break;
         case 0x0A:
             // LD A, (BC)
-            RegisterAF = (RegisterAF & 0xFF) + ((RegisterBC & 0xFF) << 8);
+            RegisterAF = (RegisterAF & 0xFF) + (ReadAddress(RegisterBC, BITS_8) << 8);
             break;
         case 0x0B:
             // DEC BC
