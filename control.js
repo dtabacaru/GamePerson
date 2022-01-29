@@ -55,89 +55,97 @@ Bit 0 - P10 Input: Right or A        (0=Pressed) (Read Only)
 // 37 = OBJ0 address 0xFE02   character code
 // 38 = OBJ0 address 0xFE03   attribute flag
 
-const P1 = 0;
-const SB = 1;
-const SC = 2;
-const DIV = 3;
-const TIMA = 4;
-const TMA = 5;
-const TAC = 6;
-const IF = 7;
-const IE = 8;
-const IME = 9;// 9 = IME gameboy manual does not state an address, top of page 269
-const LCDC = 10;
-const STAT = 11;
-const SCY = 12;
-const SCX = 13;
-const LY = 14;
-const LYC = 15;
-const DMA = 16;
-const BGP = 17;
-const OBP0 = 18;
-const OBP1 = 19;
+const P1    = 0;
+const SB    = 1;
+const SC    = 2;
+const DIV   = 3;
+const TIMA  = 4;
+const TMA   = 5;
+const TAC   = 6;
+const IF    = 7;
+const IE    = 8;
+const IME   = 9;// 9 = IME gameboy manual does not state an address, top of page 269
+const LCDC  = 10;
+const STAT  = 11;
+const SCY   = 12;
+const SCX   = 13;
+const LY    = 14;
+const LYC   = 15;
+const DMA   = 16;
+const BGP   = 17;
+const OBP0  = 18;
+const OBP1  = 19;
 const WYone = 20;// 20 = WY address 0xFF4A   window Y-coordinate
 const WYtwo = 21;// 21 = WY address 0xFF4B   window X-coordinate
-const KEY1 = 22;
-const VBK = 23;
+const KEY1  = 22;
+const VBK   = 23;
 const HDMA1 = 24;
 const HDMA2 = 25;
 const HDMA3 = 26;
 const HDMA4 = 27;
 const HDMA5 = 28;
-const RP = 29;
-const BCPS = 30;
-const BCPD = 31;
-const OCPS = 32;
-const OCPD = 33;
-const SVBK = 34;
+const RP    = 29;
+const BCPS  = 30;
+const BCPD  = 31;
+const OCPS  = 32;
+const OCPD  = 33;
+const SVBK  = 34;
 const OBJ01 = 35;// 35 = OBJ0 address 0xFE00   LCD Y-coordinate
 const OBJ02 = 36;// 36 = OBJ0 address 0xFE01   LCD X-coordinate
 const OBJ03 = 37;// 37 = OBJ0 address 0xFE02   character code
 const OBJ04 = 38;// 38 = OBJ0 address 0xFE03   attribute flag
+//there is a note about 0BJ registers on page 272
 
 var ControlRegister = []; // constrol register array
+var P14 = 1; // pulling P14 low polls directional buttons
+var P15 = 1; // pulling P15 low polls action buttons
 
 
 document.addEventListener('keyup', function (event) {
-    if (event.keyCode == 38) { // pressing the up arrow
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x04; // set PORT bit 2 high
+    if (P14 == 0) { //checking if P14 is pulled low by ROM
+        if (event.keyCode == 38) { // pressing the up arrow
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11111011; // set bit 2 low
 
-    }
-    else if (event.keyCode == 40) { // pressing the down arrow
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x08; // set PORT bit 3 high
-    }
+        }
+        else if (event.keyCode == 40) { // pressing the down arrow
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11110111; // set bit 3 low
+        }
 
-    else if (event.keyCode == 37) { // pressing the left arrow
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x02; //set PORT bit 1 high
-    }
+        else if (event.keyCode == 37) { // pressing the left arrow
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11111101; //set bit 1 low
+        }
 
-    else if (event.keyCode == 39) { // pressing the right arrow
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x01; // set PORT bit 0 high
-    }
-
-    else if (event.keyCode == 83) { // pressing the 'S' key for button A on the gameboy
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x01; // set PORT 0 bit 
+        else if (event.keyCode == 39) { // pressing the right arrow
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11111110; // set bit 0 low
+        }
     }
 
-    else if (event.keyCode == 65) { // pressing the 'A' key for button B on the gameboy
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x02; //set PORT bit 1 high
-    }
+    if (P15 == 0) { // checkig if P15 is pulled low by ROM
+        if (event.keyCode == 83) { // pressing the 'S' key for button A on the gameboy
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11111110; // set 0 bit low
+        }
 
-    else if (event.keyCode == 82) { // pressing the R key for button select on the gameboy
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x04; // set PORT bit 2 high
+        else if (event.keyCode == 65) { // pressing the 'A' key for button B on the gameboy
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11111101; //set bit 1 low
+        }
 
-    }
+        else if (event.keyCode == 82) { // pressing the R key for button select on the gameboy
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11111011; // set bit 2 low
 
-    else if (event.keyCode == 84) { // pressing the T key for button start on the gameboy
-        ControlRegister[7] |= 0x10; //set IF flag
-        ControlRegister[P1] |= 0x08; // set PORT bit 3 high
+        }
+
+        else if (event.keyCode == 84) { // pressing the T key for button start on the gameboy
+            ControlRegister[IF] |= 0x10; //set IF flag
+            ControlRegister[P1] &= 0b11110111; // set bit 3 low
+        }
     }
+    
 });
 
