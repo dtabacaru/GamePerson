@@ -6,6 +6,15 @@ var RegisterBC = 0; // Gen storage; B = High, C = Low
 var RegisterDE = 0; // Gen storage; D = High, E = Low
 var RegisterHL = 0; // Gen storage / memory pointer; H = High, L = Low
 
+/*** SP ***/
+function ReadRegisterS() {
+    return (StackPointer & 0xFF00) >> 8;
+}
+
+function ReadRegisterP() {
+    return StackPointer & 0x00FF;
+}
+
 /*** AF ***/
 
 function ReadRegisterA() {

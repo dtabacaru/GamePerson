@@ -2,9 +2,6 @@ const CLK_F         = 4.194304e6; // Clock frequency (Hz)
 const RAM_SIZE      = 8 * 1024;   // 8 KB
 const REGISTER_SIZE = 2;          // Bytes
 
-const BITS_8  = 0;
-const BITS_16 = 1;
-
 var RamSpace  = new Uint8Array(RAM_SIZE);
 var RomSpace  = [];
 var RomReader = new FileReader();
@@ -15,13 +12,11 @@ function ReadRom() {
         RomSpace = new Uint8Array(RomReader.result);
         RunGamePerson();
     };
-
     RomReader.readAsArrayBuffer(document.getElementById("RomFileInput").files[0]);
 }
 
 function RunGamePerson() {
-    // Main CPU loop
-    while (true) {
+    while (true) { // Main CPU loop
         let delay = ProcessInstruction(Get8BitValue());
         // TODO: Wait for delay time before next instruction
     }
@@ -33,57 +28,51 @@ function Get8BitValue() {
     return jackson_sux;
 }
 
+function GetSigned8BitValue() {
+    let jackson_sux = new DataView(RomSpace, ProgramCounter, 1).getInt8(0, true);
+    ProgramCounter += 1; // 8 bit cpu = 1 byte increments
+    return jackson_sux;
+}
+
 function Get16BitValue() {
     return Get8BitValue() + (Get8BitValue() << 8);
 }
 
 // https://gbdev.gg8.se/wiki/articles/Memory_Map
-// control: 0=8bit, 1=16bit
 // TODO: Implement me!
-function ReadAddress(address, control) {
-    if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
+function ReadAddress(address) {
+    if (address > 0xFFFE) {        // (FFFF-FFFF) Interrupts Enable Register (IE)
 
-    } else if (address > 0xFF7F) { // (FF80-FFFE)   High RAM (HRAM)
+    } else if (address > 0xFF7F) { // (FF80-FFFE) High RAM (HRAM)
 
-    } else if (address > 0xFEFF) { // (FF00-FF7F)   I/O Registers
+    } else if (address > 0xFEFF) { // (FF00-FF7F) I/O Registers
 
-    } else if (address > 0xFE9F) { // (FEA0-FEFF)   Not Usable
+    } else if (address > 0xFE9F) { // (FEA0-FEFF) Not Usable
 
-    } else if (address > 0xFDFF) { // (FE00-FE9F)   Sprite attribute table (OAM)
+    } else if (address > 0xFDFF) { // (FE00-FE9F) Sprite attribute table (OAM)
 
-    } else if (address > 0xDFFF) { // (E000-FDFF)   Mirror of C000~DDFF (ECHO RAM)	Typically not used
+    } else if (address > 0xDFFF) { // (E000-FDFF) Mirror of C000~DDFF (ECHO RAM) Typically not used
 
-    } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1	
+    } else if (address > 0xBFFF) { // (C000-DFFF) 8KB Work RAM (WRAM) bank 0+1	
         address -= 0xC000;
-        switch (control) {
-            case 0:
-                return RamSpace[address];
-            case 1:
-                return RamSpace[address] + (RomSpace[address] << 8);
-        }
-    } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
+        return RamSpace[address];
+    } else if (address > 0x9FFF) { // (A000-BFFF) 8KB External RAM In cartridge, switchable bank if any
 
-    } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
+    } else if (address > 0x7FFF) { // (8000-9FFF) 8KB Video RAM (VRAM) Only bank 0 in Non-CGB mode
 
-    } else { // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
-        switch (control) {
-            case 0:
-                return RomSpace[address];
-            case 1:
-                return RomSpace[address] + (RomSpace[address] << 8);
-        }
-        
+    } else {                       // (0000-3FFF) 16KB ROM bank 00 From cartridge, usually a fixed bank
+        // address -= 0;
+        return RomSpace[address];
     }
 }
 
 // https://gbdev.gg8.se/wiki/articles/Memory_Map
 // TODO: Implement me!
-// control: 0=8bit, 1=16bit
-function WriteAddress(address, val, control) {
+function WriteAddress(address, val) {
 
     //TODO: val check? handle rollover here?
 
-    if (address > 0xFFFE) { // (FFFF-FFFF) Interrupts Enable Register (IE)
+    if (address > 0xFFFE) {        // (FFFF-FFFF) Interrupts Enable Register (IE)
 
     } else if (address > 0xFF7F) { // (FF80-FFFE)   High RAM (HRAM)
 
@@ -97,34 +86,20 @@ function WriteAddress(address, val, control) {
 
     } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1
         address -= 0xC000;
-        switch (control) {
-            case 0:
-                RomSpace[address] = val;
-                return;
-            case 1:
-                RomSpace[address]   = val & 0x00FF;
-                RomSpace[address+1] = val & 0xFF00;
-                return;
-        }
+        RamSpace[address] = val;
+        return;
     } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
 
     } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
 
-    } else { // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
-        switch (control) {
-            case 0:
-                RomSpace[address] = val;
-                return;
-            case 1:
-                RomSpace[address]   = val & 0x00FF;
-                RomSpace[address+1] = val & 0xFF00;
-                return;
-        }
+    } else {                       // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
+        address -= 0;
+        RomSpace[address] = val;
+        return;
     }
 }
 
 // TODO: Return how long to wait before next instruction
-// TODO: Fix LD instructions that load from memory address
 function ProcessInstruction(op) {
     switch (op) {
         // NOP
@@ -136,7 +111,7 @@ function ProcessInstruction(op) {
             break;
         // LD (BC), A
         case 0x02:
-            WriteAddress(RegisterBC, ReadRegisterA(), BITS_8);
+            WriteAddress(RegisterBC, ReadRegisterA());
             break;
         // INC BC
         case 0x03:
@@ -156,14 +131,16 @@ function ProcessInstruction(op) {
             break;
         // LD (a16), SP
         case 0x08:
-            WriteAddress(Get16BitValue(), StackPointer, BITS_16);
+            let address = Get16BitValue();
+            WriteAddress(address,   ReadRegisterP());
+            WriteAddress(address+1, ReadRegisterS());
             break;
         // ADD HL, BC
         case 0x09:
             break;
         // LD A, (BC)
         case 0x0A:
-            WriteRegisterA(ReadAddress(RegisterBC, BITS_8));
+            WriteRegisterA(ReadAddress(RegisterBC));
             break;
         // DEC BC
         case 0x0B:
@@ -190,7 +167,7 @@ function ProcessInstruction(op) {
             break;
         // LD(DE), A
         case 0x12:
-            WriteAddress(RegisterDE, ReadRegisterA(), BITS_8);
+            WriteAddress(RegisterDE, ReadRegisterA());
             break;
         // INC DE
         case 0x13:
@@ -216,7 +193,7 @@ function ProcessInstruction(op) {
             break;
         // LD A, (DE)
         case 0x1A:
-            WriteRegisterA(ReadAddress(ReadRegisterDE, BITS_8));
+            WriteRegisterA(ReadAddress(ReadRegisterDE));
             break;
         // DEC DE
         case 0x1B:
@@ -243,8 +220,8 @@ function ProcessInstruction(op) {
             break;
         // LD (HL+), A
         case 0x22:
-            // TODO: Carry flags? Overflow? Increment address or register?
-            WriteAddress(ReadRegisterHL(), ReadRegisterA(), BITS_8);
+            // TODO: Carry flags? Overflow?
+            WriteAddress(RegisterHL, ReadRegisterA());
             RegisterHL += 1;
             break;
         // INC HL
@@ -271,322 +248,334 @@ function ProcessInstruction(op) {
             break;
         // LD A, (HL+)
         case 0x2A:
-            // TODO: Carry flags? Overflow? Increment address or register?
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterHL & 0xFF);
+            // TODO: Carry flags? Overflow?
+            WriteRegisterA(ReadAddress(RegisterHL));
             RegisterHL += 1;
             break;
+        // DEC HL
         case 0x2B:
-            // DEC HL
             break;
+        // INC L
         case 0x2C:
-            // INC L
             break;
+        // DEC L
         case 0x2D:
-            // DEC L
             break;
+        // LD L, d8
         case 0x2E:
-            // LD L, d8
-            RegisterHL = Get8BitValue() + (RegisterHL & 0xFF00);
+            WriteRegisterL(Get8BitValue());
             break;
+        // CPL
         case 0x2F:
-            // CPL
             break;
+        // JR NC, s8
         case 0x30:
-            // JR NC, s8
             break;
+        // LD SP, d16
         case 0x31:
-            // LD SP, d16
             StackPointer = Get16BitValue();
             break;
+        // LD(HL-), A
         case 0x32:
-            // LD(HL-), A
             // TODO: Carry flags? Overflow?
-            RegisterHL = (RegisterAF >> 8) - 1;
-            break;
-        case 0x33:
-            // INC SP
-            break;
-        case 0x34:
-            // INC (HL)
-            break;
-        case 0x35:
-            // DEC (HL)
-            break;
-        case 0x36:
-            // LD(HL), d8
-            RegisterHL = Get8BitValue();
-            break;
-        case 0x37:
-            // SCF
-            break;
-        case 0x38:
-            // JR C, s8
-            break;
-        case 0x39:
-            // ADD HL, SP
-            break;
-        case 0x3A:
-            // LD A, (HL-)
-            // TODO: Carry flags? Overflow?
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterHL & 0xFF);
+            WriteAddress(RegisterHL, ReadRegisterA());
             RegisterHL -= 1;
             break;
+        // INC SP
+        case 0x33:
+            break;
+        // INC (HL)
+        case 0x34:
+            break;
+        // DEC (HL)
+        case 0x35:
+            break;
+        // LD(HL), d8
+        case 0x36:
+            WriteAddress(RegisterHL, Get8BitValue());
+            break;
+        // SCF
+        case 0x37:
+            break;
+        // JR C, s8
+        case 0x38:
+            break;
+        // ADD HL, SP
+        case 0x39:
+            break;
+        // LD A, (HL-)
+        case 0x3A:    
+            // TODO: Carry flags? Overflow?
+            WriteRegisterA(ReadAddress(RegisterHL));
+            RegisterHL -= 1;
+            break;
+        // DEC SP
         case 0x3B:
-            // DEC SP
             break;
+        // INC A
         case 0x3C:
-            // INC A
             break;
+        // DEC A
         case 0x3D:
-            // DEC A
             break;
+        // LD A, d8
         case 0x3E:
-            // LD A, d8
-            RegisterAF = (RegisterAF & 0xFF) + (Get8BitValue() << 8);
+            WriteRegisterA(Get8BitValue());
             break;
+        // CCF
         case 0x3F:
-            // CCF
             break;
+        // LD B, B
         case 0x40:
-            // LD B, B
             break;
+        // LD B, C
         case 0x41:
-            // LD B, C
-            RegisterBC = (RegisterBC & 0xFF) + ((RegisterBC & 0xFF) << 8);
+            WriteRegisterB(ReadRegisterC());
             break;
+        // LD B, D    
         case 0x42:
-            // LD B, D
-            RegisterBC = (RegisterBC & 0xFF) + (RegisterDE & 0xFF00);
+            WriteRegisterB(ReadRegisterD());
             break;
+        // LD B, E
         case 0x43:
-            // LD B, E
-            RegisterBC = (RegisterBC & 0xFF) + ((RegisterDE & 0xFF) << 8);
+            WriteRegisterB(ReadRegisterE());
             break;
+        // LD B, H
         case 0x44:
-            // LD B, H
-            RegisterBC = (RegisterBC & 0xFF) + (RegisterHL & 0xFF00);
+            WriteRegisterB(ReadRegisterH());
             break;
+        // LD B, L
         case 0x45:
-            // LD B, L
-            // Fall through
+            WriteRegisterB(ReadRegisterL());
+            break;
+        // LD B, (HL)
         case 0x46:
-            // LD B, (HL)
-            RegisterBC = (RegisterBC & 0xFF) + ((RegisterHL & 0xFF) << 8);
+            WriteRegisterB(ReadAddress(RegisterHL));
             break;
+        // LD B, A
         case 0x47:
-            // LD B, A
-            RegisterBC = (RegisterBC & 0xFF) + (RegisterAF & 0xFF00);
+            WriteRegisterB(ReadRegisterA());
             break;
+        // LD C, B
         case 0x48:
-            // LD C, B
-            RegisterBC = ((RegisterBC & 0xFF00) >> 8) + (RegisterBC & 0xFF00);
+            WriteRegisterC(ReadRegisterB());
             break;
+        // LD C, C
         case 0x49:
-            // LD C, C
             break;
+        // LD C, D
         case 0x4A:
-            // LD C, D
-            RegisterBC = ((RegisterDE & 0xFF00) >> 8) + (RegisterBC & 0xFF00);
+            WriteRegisterC(ReadRegisterD());
             break;
+        // LD C, E
         case 0x4B:
-            // LD C, E
-            RegisterBC = (RegisterDE & 0xFF) + (RegisterBC & 0xFF00);
+            WriteRegisterC(ReadRegisterE());
             break;
+        // LD C, H
         case 0x4C:
-            // LD C, H
-            RegisterBC = ((RegisterHL & 0xFF00) >> 8) + (RegisterBC & 0xFF00);
+            WriteRegisterC(ReadRegisterH());
             break;
+        // LD C, L
         case 0x4D:
-            // LD C, L
-            // Fall through
+            WriteRegisterC(ReadRegisterL());
+            break;
+        // LD C, (HL)
         case 0x4E:
-            // LD C, (HL)
-            RegisterBC = (RegisterHL & 0xFF) + (RegisterBC & 0xFF00);
+            WriteRegisterC(ReadAddress(RegisterHL));
             break;
+        // LD C, A
         case 0x4F:
-            // LD C, A
-            RegisterBC = ((RegisterAF & 0xFF00) >> 8) + (RegisterBC & 0xFF00);
+            WriteRegisterC(ReadRegisterA());
             break;
+        // LD D, B
         case 0x50:
-            // LD D, B
-            RegisterDE = (RegisterDE & 0xFF) + (RegisterBC & 0xFF00);
+            WriteRegisterD(ReadRegisterB());
             break;
+        // LD D, C
         case 0x51:
-            // LD D, C
-            RegisterDE = (RegisterDE & 0xFF) + ((RegisterBC & 0xFF) << 8);
+            WriteRegisterD(ReadRegisterC());
             break;
+        // LD D, D
         case 0x52:
-            // LD D, D
             break;
+        // LD D, E
         case 0x53:
-            // LD D, E
-            RegisterDE = (RegisterDE & 0xFF) + ((RegisterDE & 0xFF) << 8);
+            WriteRegisterD(ReadRegisterE());
             break;
+        // LD D, H
         case 0x54:
-            // LD D, H
-            RegisterDE = (RegisterDE & 0xFF) + (RegisterHL & 0xFF00);
+            WriteRegisterD(ReadRegisterH());
             break;
+        // LD D, L
         case 0x55:
-            // LD D, L
-            // Fall through
+            WriteRegisterD(ReadRegisterL());
+            break;
+        // LD D, (HL)
         case 0x56:
-            // LD D, (HL)
-            RegisterDE = (RegisterDE & 0xFF) + ((RegisterHL & 0xFF) << 8);
+            WriteRegisterD(ReadAddress(RegisterHL));
             break;
+        // LD D, A
         case 0x57:
-            // LD D, A
-            RegisterDE = (RegisterDE & 0xFF) + (RegisterAF & 0xFF00);
+            WriteRegisterD(ReadRegisterA());
             break;
+        // LD E, B
         case 0x58:
-            // LD E, B
-            RegisterDE = ((RegisterBC & 0xFF00) >> 8) + (RegisterDE & 0xFF00);
+            WriteRegisterE(ReadRegisterB());
             break;
+        // LD E, C
         case 0x59:
-            // LD E, C
-            RegisterDE = (RegisterBC & 0xFF) + (RegisterDE & 0xFF00);
+            WriteRegisterE(ReadRegisterC());
             break;
+        // LD E, D
         case 0x5A:
-            // LD E, D
-            RegisterDE = ((RegisterDE & 0xFF00) >> 8) + (RegisterDE & 0xFF00);
+            WriteRegisterE(ReadRegisterD());
             break;
+        // LD E, E
         case 0x5B:
-            // LD E, E
+            // jackson_sux
             break;
+        // LD E, H
         case 0x5C:
-            // LD E, H
-            RegisterDE = ((RegisterHL & 0xFF00) >> 8) + (RegisterDE & 0xFF00);
+            WriteRegisterE(ReadRegisterH());
             break;
+        // LD E, L
         case 0x5D:
-            // LD E, L
-            // Fall through
+            WriteRegisterE(ReadRegisterL());
+            break;
+        // LD E, (HL)
         case 0x5E:
-            // LD E, (HL)
-            RegisterDE = (RegisterHL & 0xFF) + (RegisterDE & 0xFF00);
+            WriteRegisterE(ReadAddress(RegisterHL));
             break;
+        // LD E, A
         case 0x5F:
-            // LD E, A
-            RegisterDE = ((RegisterAF & 0xFF00) >> 8) + (RegisterDE & 0xFF00);
+            WriteRegisterE(ReadRegisterA());
             break;
+        // LD H, B
         case 0x60:
-            // LD H, B
-            RegisterHL = (RegisterHL & 0xFF) + (RegisterBC & 0xFF00);
+            WriteRegisterH(ReadRegisterB());
             break;
+        // LD H, C
         case 0x61:
-            // LD H, C
-            RegisterHL = (RegisterHL & 0xFF) + ((RegisterBC & 0xFF) << 8);
+            WriteRegisterH(ReadRegisterC());
             break;
+        // LD H, D
         case 0x62:
-            // LD H, D
-            RegisterHL = (RegisterHL & 0xFF) + (RegisterDE & 0xFF00);
+            WriteRegisterH(ReadRegisterD());
             break;
+        // LD H, E
         case 0x63:
-            // LD H, E
-            RegisterHL = (RegisterHL & 0xFF) + ((RegisterDE & 0xFF) << 8);
+            WriteRegisterH(ReadRegisterE());
             break;
+        // LD H, H
         case 0x64:
-            // LD H, H
+            // jackson_sux
             break;
+        // LD H, L
         case 0x65:
-            // LD H, L
-            // Fall through
+            WriteRegisterH(ReadRegisterL());
+            break;
+        // LD H, (HL)
         case 0x66:
-            // LD H, (HL)
-            RegisterHL = (RegisterHL & 0xFF) + ((RegisterHL & 0xFF) << 8);
+            WriteRegisterH(ReadAddress(RegisterHL));
             break;
+        // LD H, A
         case 0x67:
-            // LD H, A
-            RegisterHL = (RegisterHL & 0xFF) + (RegisterAF & 0xFF00);
+            WriteRegisterH(ReadRegisterA());
             break;
+        // LD L, B
         case 0x68:
-            // LD L, B
-            RegisterHL = ((RegisterBC & 0xFF00) >> 8) + (RegisterHL & 0xFF00);
+            WriteRegisterL(ReadRegisterB());
             break;
+        // LD L, C
         case 0x69:
-            // LD L, C
-            RegisterHL = (RegisterBC & 0xFF) + (RegisterHL & 0xFF00);
+            WriteRegisterL(ReadRegisterC());
             break;
+        // LD L, D
         case 0x6A:
-            // LD L, D
-            RegisterHL = ((RegisterDE & 0xFF00) >> 8) + (RegisterHL & 0xFF00);
+            WriteRegisterL(ReadRegisterD());
             break;
+        // LD L, E
         case 0x6B:
-            // LD L, E
-            RegisterHL = (RegisterDE & 0xFF) + (RegisterHL & 0xFF00);
+            WriteRegisterL(ReadRegisterE());
             break;
+        // LD L, H
         case 0x6C:
-            // LD L, H
-            RegisterHL = ((RegisterHL & 0xFF00) >> 8) + (RegisterHL & 0xFF00);
+            WriteRegisterL(ReadRegisterH());
             break;
+        // LD L, L
         case 0x6D:
-            // LD L, L
+            // jackson_sux
             break;
+        // LD L, (HL)
         case 0x6E:
-            // LD L, (HL)
+            WriteRegisterL(ReadAddress(RegisterHL));
             break;
+        // LD L, A
         case 0x6F:
-            // LD L, A
-            RegisterHL = ((RegisterAF & 0xFF00) >> 8) + (RegisterHL & 0xFF00);
+            WriteRegisterL(ReadRegisterA());
             break;
+        // LD (HL), B
         case 0x70:
-            // LD (HL), B
-            RegisterHL = (RegisterBC & 0xFF00) >> 8;
+            WriteAddress(RegisterHL, ReadRegisterB());
             break;
+        // LD (HL), C
         case 0x71:
-            // LD (HL), C
-            RegisterHL = RegisterBC & 0xFF;
+            WriteAddress(RegisterHL, ReadRegisterC());
             break;
+        // LD(HL), D
         case 0x72:
-            // LD(HL), D
-            RegisterHL = (RegisterDE & 0xFF00) >> 8;
+            WriteAddress(RegisterHL, ReadRegisterD());
             break;
+        // LD (HL), E
         case 0x73:
-            // LD (HL), E
-            RegisterHL = RegisterDE & 0xFF;
+            WriteAddress(RegisterHL, ReadRegisterE());
             break;
+        // LD (HL), H
         case 0x74:
-            // LD (HL), H
-            RegisterHL = (RegisterHL & 0xFF00) >> 8;
+            WriteAddress(RegisterHL, ReadRegisterH());
             break;
+        // LD (HL), L
         case 0x75:
-            // LD (HL), L
-            RegisterHL = RegisterHL & 0xFF;
+            WriteAddress(RegisterHL, ReadRegisterL());
             break;
+        // HALT
         case 0x76:
-            // HALT
             break;
+        // LD (HL), A
         case 0x77:
-            // LD (HL), A
-            RegisterHL = (RegisterAF & 0xFF00) >> 8;
+            WriteAddress(RegisterHL, ReadRegisterA());
             break;
+        // LD A, B
         case 0x78:
-            // LD A, B
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterBC & 0xFF00);
+            WriteRegisterA(ReadRegisterB());
             break;
+        // LD A, C
         case 0x79:
-            // LD A, C
-            RegisterAF = (RegisterAF & 0xFF) + ((RegisterBC & 0xFF) << 8);
+            WriteRegisterA(ReadRegisterC());
             break;
+        // LD A, D
         case 0x7A:
-            // LD A, D
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterDE & 0xFF00);
+            WriteRegisterA(ReadRegisterD());
             break;
+        // LD A, E
         case 0x7B:
-            // LD A, E
-            RegisterAF = (RegisterAF & 0xFF) + ((RegisterDE & 0xFF) << 8);
+            WriteRegisterA(ReadRegisterE());
             break;
+        // LD A, H
         case 0x7C:
-            // LD A, H
-            RegisterAF = (RegisterAF & 0xFF) + (RegisterHL & 0xFF00);
+            WriteRegisterA(ReadRegisterH());
             break;
+        // LD A, L
         case 0x7D:
-            // LD A, L
-            // Fall through
-        case 0x7E:
-            // LD A, (HL)
-            RegisterAF = (RegisterAF & 0xFF) + ((RegisterHL & 0xFF) << 8);
+            WriteRegisterA(ReadRegisterL());
             break;
+        // LD A, (HL)
+        case 0x7E:
+            WriteRegisterA(ReadAddress(RegisterHL));
+            break;
+        // LD A, A
         case 0x7F:
-            // LD A, A
+            // jackson_sux
             break;
         case 0x80:
             break;
@@ -780,15 +769,15 @@ function ProcessInstruction(op) {
             break;
         case 0xDF:
             break;
+        // LD (a8), A
         case 0xE0:
-            // LD (a8), A
-            // TODO: Implement memory map
+            WriteAddress(Get8BitValue(), ReadRegisterA());
             break;
         case 0xE1:
             break;
+        // LD (C), A
         case 0xE2:
-            // LD (C), A
-            // TODO: Implement memory map
+            WriteAddress(ReadRegisterC(), ReadRegisterA());
             break;
         case 0xE3:
             break;
@@ -804,9 +793,9 @@ function ProcessInstruction(op) {
             break;
         case 0xE9:
             break;
+        // LD (a16), A
         case 0xEA:
-            // LD (a16), A
-            // TODO: Implement memory map
+            WriteAddress(Get16BitValue(), ReadRegisterA());
             break;
         case 0xEB:
             break;
@@ -818,15 +807,15 @@ function ProcessInstruction(op) {
             break;
         case 0xEF:
             break;
+        // LD A, (a8)
         case 0xF0:
-            // LD A, (a8)
-            // TODO: Implement memory map
+            WriteRegisterA(ReadAddress(Get8BitValue()));
             break;
         case 0xF1:
             break;
+        // LD A, (C)
         case 0xF2:
-            // LD A, (C)
-            // TODO: Implement memory map
+            WriteRegisterA(ReadAddress(ReadRegisterC()));
             break;
         case 0xF3:
             break;
@@ -838,16 +827,17 @@ function ProcessInstruction(op) {
             break;
         case 0xF7:
             break;
+        // LD HL, SP+s8
         case 0xF8:
-            // LD HL, SP+s8
-            // TODO Get signed 8 bit
-            RegisterHL = StackPointer;// + Get8BitValue();
+            RegisterHL = StackPointer + GetSigned8BitValue();
             break;
+        // LD SP, HL
         case 0xF9:
+            StackPointer = RegisterHL;
             break;
+        // LD A, (a16)
         case 0xFA:
-            // LD A, (a16)
-            // TODO: Implement memory map
+            WriteRegisterA(ReadAddress(Get16BitValue()));
             break;
         case 0xFB:
             break;
