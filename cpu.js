@@ -2,34 +2,73 @@ const CLK_F         = 4.194304e6; // Clock frequency (Hz)
 const RAM_SIZE      = 8 * 1024;   // 8 KB
 const REGISTER_SIZE = 2;          // Bytes
 
-var RamSpace  = new Uint8Array(RAM_SIZE);
-var RomSpace  = [];
+var Ram  = new Uint8Array(RAM_SIZE);
+var EchoRam   = new Uint8Array(RAM_SIZE);
+var Rom  = [];
 var RomReader = new FileReader();
+var Instruction = 0x00;
 
 function ReadRom() {
     RomReader.onload = function () 
     {
-        RomSpace = new Uint8Array(RomReader.result);
-        RunGamePerson();
+        Rom = new Uint8Array(RomReader.result);
+        //RunGamePerson();
     };
     RomReader.readAsArrayBuffer(document.getElementById("RomFileInput").files[0]);
 }
 
 function RunGamePerson() {
     while (true) { // Main CPU loop
-        let delay = ProcessInstruction(Get8BitValue());
-        // TODO: Wait for delay time before next instruction
+        Step();
     }
 }
 
+function NumberToHexString(val, padding) {
+    var jackson_sux = Number(val).toString(16);
+    while (jackson_sux.length < padding) {
+        jackson_sux = "0" + jackson_sux;
+    }
+    return "0x" + jackson_sux;
+}
+
+function ReadMemBox() {
+    let address = parseInt(document.getElementById("MemBoxInput").value);
+
+    if (!isNaN(address)) {
+        if (address >= 0 && address <= 0xFFFF) {
+            let lowerByte = ReadAddress(address);
+            let higherByte = address < 0xFFFE ? ReadAddress(address+1) : 0;
+            document.getElementById("MemBoxVar").innerHTML = NumberToHexString(lowerByte | (higherByte << 8), 4);
+        }
+    }
+}
+
+function UpdateDebug() {
+    document.getElementById("InstructionVar").innerHTML = InstructionStrings[Instruction];
+    document.getElementById("OpcodeVar").innerHTML = NumberToHexString(Instruction, 2);
+    document.getElementById("NextVar").innerHTML = NumberToHexString((Rom[ProgramCounter] << 8) | Rom[ProgramCounter+1], 4);
+    document.getElementById("ProgramCounterVar").innerHTML = NumberToHexString(ProgramCounter, 4);
+    document.getElementById("StackPointerVar").innerHTML = NumberToHexString(StackPointer, 4);
+    document.getElementById("AFVar").innerHTML = NumberToHexString(RegisterAF, 4);
+    document.getElementById("BCVar").innerHTML = NumberToHexString(RegisterBC, 4);
+    document.getElementById("DEVar").innerHTML = NumberToHexString(RegisterDE, 4);
+    document.getElementById("HLVar").innerHTML = NumberToHexString(RegisterHL, 4);
+}
+
+function Step() {
+    Instruction = Get8BitValue()
+    ProcessInstruction(Instruction);
+    UpdateDebug();
+}
+
 function Get8BitValue() {
-    let jackson_sux = RomSpace[ProgramCounter];
+    let jackson_sux = Rom[ProgramCounter];
     ProgramCounter += 1; // 8 bit cpu = 1 byte increments
     return jackson_sux;
 }
 
 function GetSigned8BitValue() {
-    let jackson_sux = new DataView(RomSpace, ProgramCounter, 1).getInt8(0, true);
+    let jackson_sux = new DataView(Rom, ProgramCounter, 1).getInt8(0, true);
     ProgramCounter += 1; // 8 bit cpu = 1 byte increments
     return jackson_sux;
 }
@@ -55,14 +94,14 @@ function ReadAddress(address) {
 
     } else if (address > 0xBFFF) { // (C000-DFFF) 8KB Work RAM (WRAM) bank 0+1	
         address -= 0xC000;
-        return RamSpace[address];
+        return Ram[address];
     } else if (address > 0x9FFF) { // (A000-BFFF) 8KB External RAM In cartridge, switchable bank if any
 
     } else if (address > 0x7FFF) { // (8000-9FFF) 8KB Video RAM (VRAM) Only bank 0 in Non-CGB mode
 
     } else {                       // (0000-3FFF) 16KB ROM bank 00 From cartridge, usually a fixed bank
         // address -= 0;
-        return RomSpace[address];
+        return Rom[address];
     }
 }
 
@@ -86,21 +125,21 @@ function WriteAddress(address, val) {
 
     } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1
         address -= 0xC000;
-        RamSpace[address] = val;
+        Ram[address] = val;
         return;
     } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
 
     } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
 
     } else {                       // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
-        address -= 0;
-        RomSpace[address] = val;
+        //address -= 0;
+        Rom[address] = val;
         return;
     }
 }
 
-// TODO: Return how long to wait before next instruction
 function ProcessInstruction(op) {
+    
     switch (op) {
         // NOP
         case 0x00:

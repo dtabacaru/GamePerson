@@ -1,38 +1,97 @@
-<head>
-<title>GamePerson</title>
-<link rel="shortcut icon" type="image/png" href="favicon.png" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-</head>
+<html>
+	<head>
+		<title>GamePerson</title>
+		<link rel="shortcut icon" type="image/png" href="favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.2" />
+		<style>
+			th {
+				text-align: left;
+			}
+			td {
+				text-align: right;
+				width: 105px;
+			}
+		</style>
+	</head>
 
-<body>
-    <div style="position: absolute; 
-			    top: 0; 
-				left: 0; ">
-		<img src="gameperson.png" width="286px"></img>
-	</div>
-	<div style = "text-align:center; ">
-		<canvas id="GamePersonCanvas" 
-				width="160px" 
-				height="144px" 
-			    style="position: absolute; 
-			       top: 60px; 
-				   left: 66px; 
-				   background-color: black;">
-		</canvas>
-	</div>
+	<body>
+		<div style="position: absolute; 
+					top:  0px; 
+					left: 0px;">
+			<img src="gameperson.png" width="286px"></img>
+		</div>
 
-	<script type="text/javascript" src="gpu.js"></script>
-	<script type="text/javascript" src="spu.js"></script>
-	<script type="text/javascript" src="input.js"></script>
-	<script type="text/javascript" src="cpu_registers.js"></script>
-	<script type="text/javascript" src="cpu.js"></script>
-	<script type="text/javascript" src="gameperson.js"></script>
+		<div style="position: absolute; 
+					top:  60px; 
+					left: 66px;">
+			<canvas id="GamePersonCanvas"  
+					style="width:  160px;
+						   height: 144px;
+						   background-color: black;">
+			</canvas>
+		</div>
 
-	<div style="position: absolute; 
-				top: 500; 
-				left: 0; ">
-		<input type="file" id="RomFileInput" onchange="ReadRom()"/>
-	</div>
+		<div style="position: absolute; 
+			top:  20px; 
+			left: 300px;">
+			<table>
+				<tr>
+					<th>Instruction:</th>
+					<td id="InstructionVar">NOP</td>
+				</tr>
+				<tr>
+					<th>Opcode:</th>
+					<td id="OpcodeVar">0x00</td>
+				</tr>
+				<tr>
+					<th>Rom[PC]:</th>
+					<td id="NextVar">0x0000</td>
+				</tr>
+				<tr>
+					<th>PC:</th>
+					<td id="ProgramCounterVar">0x0100</td>
+				</tr>
+				<tr>
+					<th>SP:</th>
+					<td id="StackPointerVar">0x0000</td>
+				</tr>
+				<tr>
+					<th>AF:</th>
+					<td id="AFVar">0x0000</td>
+				</tr>
+				<tr>
+					<th>BC:</th>
+					<td id="BCVar">0x0000</td>
+				</tr>
+				<tr>
+					<th>DE:</th>
+					<td id="DEVar">0x0000</td>
+				</tr>
+				<tr>
+					<th>HL:</th>
+					<td id="HLVar">0x0000</td>
+				</tr>
+				<tr>
+					<th>[<input type="text" id="MemBoxInput" style="width: 50px" onchange="ReadMemBox()" />]</th>
+					<td id="MemBoxVar">0x0000</td>
+				</tr>
+			</table>
+			<input type="button" value="Step" onclick="Step()"/>
+		</div>
 
-</body>
+		<div style="position: absolute; 
+					top: 500; 
+					left: 0; ">
+			<input type="file" id="RomFileInput" onchange="ReadRom()"/>
+		</div>
+
+		<script type="text/javascript" src="gpu.js"></script>
+		<script type="text/javascript" src="spu.js"></script>
+		<script type="text/javascript" src="input.js"></script>
+		<script type="text/javascript" src="cpu_registers.js"></script>
+		<script type="text/javascript" src="instructions.js"></script>
+		<script type="text/javascript" src="cpu.js"></script>
+		<script type="text/javascript" src="gameperson.js"></script>
+
+	</body>
 </html>
