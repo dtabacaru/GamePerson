@@ -9,96 +9,91 @@ Bit 1 - P11 Input: Left  or B        (0=Pressed) (Read Only)
 Bit 0 - P10 Input: Right or A        (0=Pressed) (Read Only)
  *
  *
- *  make all these an array you dummy. also missing second page of registers
- *  add this to dan's memory map under I/O registers  
+ *  
+ *  add this to dan's memory map under I/O registers 
+ *  there is a note about 0BJ registers on page 272
+ *  9 = IME gameboy manual does not state an address, top of page 269
+ *  need to decide whether I need if or else if statement for P14 & P15. probably else if since ROM polls each pin sequentially 
+ *  not sure if I need to worry about waveformRAM register
+ *  waveformRAM register uses addresses 0xFF30 -> 0xFF3F. each 8 bit address is split into 2 "steps"
+ *  e.g. 0xFF30 bits 7-4 are "step 0" and bits 3-0 are "step 1"
+ *      0xFF31 bits 7-4 are "step 2" and bits 3-0 are "step 3"
+ *      0xFF3F bits 7-4 are "step 30" and bits 3-0 are "step 31"
  */
 
 
-//Control register array descriptions
-// 0 = P1 address 0xFF00
-// 1 = SB address 0xFF01
-// 2 = SC address 0xFF02
-// 3 = DIV address 0xFF04
-// 4 = TIMA address 0xFF05
-// 5 = TMA address 0xFF06
-// 6 = TAC address 0xFF07
-// 7 = IF address 0xFF0F
-// 8 = IE address 0xFFFF
-// 9 = IME gameboy manual does not state an address, top of page 269
-// 10 = LCDC address 0xFF40
-// 11 = STAT address 0xFF41
-// 12 = SCY address 0xFF42
-// 13 = SCX address 0xFF43
-// 14 = LY address 0xFF44
-// 15 = LYC address 0xFF45
-// 16 = DMA address 0xFF46
-// 17 = BGP address 0xFF47
-// 18 = OBP0 address 0xFF48
-// 19 = OBP1 address 0xFF49
-// 20 = WY address 0xFF4A   window Y-coordinate
-// 21 = WY address 0xFF4B   window X-coordinate
-// 22 = KEY1 address 0xFF4D
-// 23 = VBK address 0xFF4F
-// 24 = HDMA1 address 0xFF51
-// 25 = HDMA2 address 0xFF52
-// 26 = HDMA3 addrress 0xFF53
-// 27 = HDMA4 address 0xFF54
-// 28 = HDMA5 address 0xFF55
-// 29 = RP address 0xFF56
-// 30 = BCPS address 0xFF68
-// 31 = BCPD address 0xFF69
-// 32 = OCPS address 0xFF6A
-// 33 = OCPD address 0xFF6B
-// 34 = SVBK address 0xFF70
-// 35 = OBJ0 address 0xFE00   LCD Y-coordinate
-// 36 = OBJ0 address 0xFE01   LCD X-coordinate
-// 37 = OBJ0 address 0xFE02   character code
-// 38 = OBJ0 address 0xFE03   attribute flag
-
-const P1    = 0;
-const SB    = 1;
-const SC    = 2;
-const DIV   = 3;
-const TIMA  = 4;
-const TMA   = 5;
-const TAC   = 6;
-const IF    = 7;
-const IE    = 8;
-const IME   = 9;// 9 = IME gameboy manual does not state an address, top of page 269
-const LCDC  = 10;
-const STAT  = 11;
-const SCY   = 12;
-const SCX   = 13;
-const LY    = 14;
-const LYC   = 15;
-const DMA   = 16;
-const BGP   = 17;
-const OBP0  = 18;
-const OBP1  = 19;
-const WYone = 20;// 20 = WY address 0xFF4A   window Y-coordinate
-const WYtwo = 21;// 21 = WY address 0xFF4B   window X-coordinate
-const KEY1  = 22;
-const VBK   = 23;
-const HDMA1 = 24;
-const HDMA2 = 25;
-const HDMA3 = 26;
-const HDMA4 = 27;
-const HDMA5 = 28;
-const RP    = 29;
-const BCPS  = 30;
-const BCPD  = 31;
-const OCPS  = 32;
-const OCPD  = 33;
-const SVBK  = 34;
-const OBJ01 = 35;// 35 = OBJ0 address 0xFE00   LCD Y-coordinate
-const OBJ02 = 36;// 36 = OBJ0 address 0xFE01   LCD X-coordinate
-const OBJ03 = 37;// 37 = OBJ0 address 0xFE02   character code
-const OBJ04 = 38;// 38 = OBJ0 address 0xFE03   attribute flag
-//there is a note about 0BJ registers on page 272
-
-var ControlRegister = []; // constrol register array
+var ControlRegister = []; // control register array
+var SoundRegister = []; // sound register array
+var WaveFormRAM = []; // waveform register
 var P14 = 1; // pulling P14 low polls directional buttons
 var P15 = 1; // pulling P15 low polls action buttons
+
+//#defines used for ControlRegister
+const P1    = 0; //address 0xFF00
+const SB    = 1; //address 0xFF01
+const SC    = 2; //address0xFF02
+const DIV   = 3; //address0xFF04
+const TIMA  = 4; //address 0xFF05
+const TMA   = 5; //address0xFF06
+const TAC   = 6; //address0xFF07
+const IF    = 7; //address0xFF0F
+const IE    = 8; //address0xFFFF
+const IME   = 9; //addressIME gameboy manual does not state an address, top of page 269
+const LCDC  = 10; //address0xFF40
+const STAT  = 11; //address0xFF41
+const SCY   = 12; //address0xFF42
+const SCX   = 13; //address0xFF43
+const LY    = 14; //address0xFF44
+const LYC   = 15; //address0xFF45
+const DMA   = 16; //address0xFF46
+const BGP   = 17; //address0xFF47
+const OBP0  = 18; //address0xFF48
+const OBP1  = 19; // 19 = OBP1 address 0xFF49
+const WYone = 20; // 20 = WY address 0xFF4A   window Y-coordinate
+const WYtwo = 21; // 21 = WY address 0xFF4B   window X-coordinate
+const KEY1  = 22; //address 0xFF4D
+const VBK   = 23; //address 0xFF4F
+const HDMA1 = 24; //address 0xFF51
+const HDMA2 = 25; //address 0xFF52
+const HDMA3 = 26; //address 0xFF53
+const HDMA4 = 27; //address 0xFF54
+const HDMA5 = 28; //address 0xFF55
+const RP    = 29; //address 0xFF56
+const BCPS  = 30; //address 0xFF68
+const BCPD  = 31; //address 0xFF69
+const OCPS  = 32; //address 0xFF6A
+const OCPD  = 33; //address 0xFF6B
+const SVBK  = 34; //address 0xFF70
+const OBJ01 = 35; //OBJ0 address 0xFE00   LCD Y-coordinate
+const OBJ02 = 36; //OBJ0 address 0xFE01   LCD X-coordinate
+const OBJ03 = 37; //OBJ0 address 0xFE02   character code
+const OBJ04 = 38; //38 = OBJ0 address 0xFE03   attribute flag
+
+//#defines used for SoundRegister
+const NR10 = 0; //address 0xFF10
+const NR11 = 1; //address 0xFF11
+const NR12 = 2; //address 0xFF12
+const NR13 = 3; //address 0xFF13
+const NR14 = 4; //address 0xFF14
+const NR21 = 5; //address 0xFF16
+const NR22 = 5; //address 0xFF17
+const NR23 = 6; //address 0xFF18
+const NR24 = 7; //address 0xFF19
+const NR30 = 8; //address 0xFF1A
+const NR31 = 9; //address 0xFF1B    
+const NR32 = 10; //address 0xFF1C
+const NR33 = 11; //address 0xFF1D
+const NR34 = 12; //address 0xFF1E
+const NR41 = 13; //address 0xFF20
+const NR42 = 14; //address 0xFF21
+const NR43 = 15; //address 0xFF22
+const NR44 = 16; //address 0xFF23
+const NR50 = 17; //address 0xFF24
+const NR51 = 18; //address 0xFF25
+const NR52 = 19; //address 0xFF26
+
+
+
 
 
 document.addEventListener('keyup', function (event) {
@@ -124,7 +119,7 @@ document.addEventListener('keyup', function (event) {
         }
     }
 
-    if (P15 == 0) { // checkig if P15 is pulled low by ROM
+     else if (P15 == 0) { // checkig if P15 is pulled low by ROM
         if (event.keyCode == 83) { // pressing the 'S' key for button A on the gameboy
             ControlRegister[IF] |= 0x10; //set IF flag
             ControlRegister[P1] &= 0b11111110; // set 0 bit low
