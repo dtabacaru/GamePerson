@@ -18,6 +18,54 @@ function ReadRegisterP() {
 
 /*** AF ***/
 
+function ReadZFlag() {
+    return ReadRegisterF() & 0b10000000;
+}
+
+function SetZFlag() {
+    WriteRegisterF(ReadRegisterF() | 0b10000000);
+}
+
+function UnSetZFlag() {
+    WriteRegisterF(ReadRegisterF() & ~0b10000000);
+}
+
+function ReadNFlag() {
+    return ReadRegisterF() & 0b01000000;
+}
+
+function SetNFlag() {
+    WriteRegisterF(ReadRegisterF() |  0b01000000);
+}
+
+function UnSetNFlag() {
+    WriteRegisterF(ReadRegisterF() & ~0b01000000);
+}
+
+function ReadHFlag() {
+    return ReadRegisterF() & 0b00100000;
+}
+
+function SetHFlag() {
+    WriteRegisterF(ReadRegisterF() |  0b00100000);
+}
+
+function UnSetHFlag() {
+    WriteRegisterF(ReadRegisterF() & ~0b00100000);
+}
+
+function ReadCFlag() {
+    return ReadRegisterF() & 0b00010000;
+}
+
+function SetCFlag() {
+    WriteRegisterF(ReadRegisterF() |  0b00010000);
+}
+
+function UnSetCFlag() {
+    WriteRegisterF(ReadRegisterF() &= ~0b00010000);
+}
+
 function ReadRegisterA() {
     return (RegisterAF & 0xFF00) >> 8;
 }

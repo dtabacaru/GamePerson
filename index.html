@@ -37,15 +37,15 @@
 			<table>
 				<tr>
 					<th>Instruction:</th>
-					<td id="InstructionVar">NOP</td>
+					<td id="InstructionVar"></td>
 				</tr>
 				<tr>
 					<th>Opcode:</th>
-					<td id="OpcodeVar">0x00</td>
+					<td id="OpcodeVar"></td>
 				</tr>
 				<tr>
 					<th>Rom[PC]:</th>
-					<td id="NextVar">0x0000</td>
+					<td id="NextVar"></td>
 				</tr>
 				<tr>
 					<th>PC:</th>
@@ -72,11 +72,12 @@
 					<td id="HLVar">0x0000</td>
 				</tr>
 				<tr>
-					<th>[<input type="text" id="MemBoxInput" style="width: 50px" onchange="ReadMemBox()" />]</th>
+					<th>[0x<input type="text" id="MemBoxInput" style="width: 50px" onchange="ReadMemBox()" />]</th>
 					<td id="MemBoxVar">0x0000</td>
 				</tr>
 			</table>
-			<input type="button" value="Step" onclick="Step()"/>
+			<input type="button" value="Fetch"   id="FetchButton"   onclick="Fetch()"/>
+			<input type="button" value="Execute" id="ExecuteButton" onclick="Execute()" disabled/>
 		</div>
 
 		<div style="position: absolute; 

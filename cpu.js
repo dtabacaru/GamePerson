@@ -2,6 +2,8 @@ const CLK_F         = 4.194304e6; // Clock frequency (Hz)
 const RAM_SIZE      = 8 * 1024;   // 8 KB
 const REGISTER_SIZE = 2;          // Bytes
 
+var Debug = true;
+
 var Ram  = new Uint8Array(RAM_SIZE);
 var EchoRam   = new Uint8Array(RAM_SIZE);
 var Rom  = [];
@@ -12,14 +14,19 @@ function ReadRom() {
     RomReader.onload = function () 
     {
         Rom = new Uint8Array(RomReader.result);
-        //RunGamePerson();
+
+        if (Debug) 
+            UpdateNextVarUI();
+        else
+            RunGamePerson();
     };
     RomReader.readAsArrayBuffer(document.getElementById("RomFileInput").files[0]);
 }
 
 function RunGamePerson() {
     while (true) { // Main CPU loop
-        Step();
+        Fetch();
+        Execute();
     }
 }
 
@@ -28,11 +35,11 @@ function NumberToHexString(val, padding) {
     while (jackson_sux.length < padding) {
         jackson_sux = "0" + jackson_sux;
     }
-    return "0x" + jackson_sux;
+    return "0x" + jackson_sux.toUpperCase();
 }
 
 function ReadMemBox() {
-    let address = parseInt(document.getElementById("MemBoxInput").value);
+    let address = parseInt("0x"+document.getElementById("MemBoxInput").value);
 
     if (!isNaN(address)) {
         if (address >= 0 && address <= 0xFFFF) {
@@ -43,7 +50,11 @@ function ReadMemBox() {
     }
 }
 
-function UpdateDebug() {
+function UpdateNextVarUI() {
+    document.getElementById("NextVar").innerHTML = NumberToHexString((Rom[ProgramCounter] << 8) | Rom[ProgramCounter+1], 4);
+}
+
+function UpdateDebugUI() {
     document.getElementById("InstructionVar").innerHTML = InstructionStrings[Instruction];
     document.getElementById("OpcodeVar").innerHTML = NumberToHexString(Instruction, 2);
     document.getElementById("NextVar").innerHTML = NumberToHexString((Rom[ProgramCounter] << 8) | Rom[ProgramCounter+1], 4);
@@ -53,12 +64,19 @@ function UpdateDebug() {
     document.getElementById("BCVar").innerHTML = NumberToHexString(RegisterBC, 4);
     document.getElementById("DEVar").innerHTML = NumberToHexString(RegisterDE, 4);
     document.getElementById("HLVar").innerHTML = NumberToHexString(RegisterHL, 4);
+
+    document.getElementById("FetchButton").disabled = !document.getElementById("FetchButton").disabled;
+    document.getElementById("ExecuteButton").disabled = !document.getElementById("ExecuteButton").disabled;
 }
 
-function Step() {
-    Instruction = Get8BitValue()
+function Fetch() {
+    Instruction = Get8BitValue();
+    if(Debug) UpdateDebugUI();
+}
+
+function Execute() {
     ProcessInstruction(Instruction);
-    UpdateDebug();
+    if(Debug) UpdateDebugUI();
 }
 
 function Get8BitValue() {
@@ -68,7 +86,7 @@ function Get8BitValue() {
 }
 
 function GetSigned8BitValue() {
-    let jackson_sux = new DataView(Rom, ProgramCounter, 1).getInt8(0, true);
+    let jackson_sux = new DataView(Rom.buffer, ProgramCounter, 1).getInt8(0, true);
     ProgramCounter += 1; // 8 bit cpu = 1 byte increments
     return jackson_sux;
 }
@@ -139,7 +157,6 @@ function WriteAddress(address, val) {
 }
 
 function ProcessInstruction(op) {
-    
     switch (op) {
         // NOP
         case 0x00:
@@ -169,11 +186,12 @@ function ProcessInstruction(op) {
         case 0x07:
             break;
         // LD (a16), SP
-        case 0x08:
+        case 0x08: {
             let address = Get16BitValue();
             WriteAddress(address,   ReadRegisterP());
             WriteAddress(address+1, ReadRegisterS());
             break;
+        }
         // ADD HL, BC
         case 0x09:
             break;
@@ -226,6 +244,7 @@ function ProcessInstruction(op) {
             break;
         // JR s8
         case 0x18:
+            ProgramCounter += GetSigned8BitValue();
             break;
         // ADD HL, DE
         case 0x19:
@@ -251,15 +270,18 @@ function ProcessInstruction(op) {
         case 0x1F:
             break;
         // JR NZ, s8
-        case 0x20:
+        case 0x20: {
+            let offset = GetSigned8BitValue();
+            if(!ReadZFlag())
+                ProgramCounter += offset;
             break;
+        }
         // LD HL, d16
         case 0x21:
             RegisterHL = Get16BitValue();
             break;
         // LD (HL+), A
         case 0x22:
-            // TODO: Carry flags? Overflow?
             WriteAddress(RegisterHL, ReadRegisterA());
             RegisterHL += 1;
             break;
@@ -280,14 +302,17 @@ function ProcessInstruction(op) {
         case 0x27:
             break;
         // JR Z, s8
-        case 0x28:
+        case 0x28: {
+            let offset = GetSigned8BitValue();
+            if(ReadZFlag())
+                ProgramCounter += offset;
             break;
+        }
         // ADD HL, HL
         case 0x29:
             break;
         // LD A, (HL+)
         case 0x2A:
-            // TODO: Carry flags? Overflow?
             WriteRegisterA(ReadAddress(RegisterHL));
             RegisterHL += 1;
             break;
@@ -308,15 +333,18 @@ function ProcessInstruction(op) {
         case 0x2F:
             break;
         // JR NC, s8
-        case 0x30:
+        case 0x30: {
+            let offset = GetSigned8BitValue();
+            if(!ReadCFlag())
+                ProgramCounter += offset;
             break;
+        }
         // LD SP, d16
         case 0x31:
             StackPointer = Get16BitValue();
             break;
         // LD(HL-), A
         case 0x32:
-            // TODO: Carry flags? Overflow?
             WriteAddress(RegisterHL, ReadRegisterA());
             RegisterHL -= 1;
             break;
@@ -337,14 +365,17 @@ function ProcessInstruction(op) {
         case 0x37:
             break;
         // JR C, s8
-        case 0x38:
+        case 0x38: {
+            let offset = GetSigned8BitValue();
+            if(ReadCFlag())
+                ProgramCounter += offset;
             break;
+        }
         // ADD HL, SP
         case 0x39:
             break;
         // LD A, (HL-)
         case 0x3A:    
-            // TODO: Carry flags? Overflow?
             WriteRegisterA(ReadAddress(RegisterHL));
             RegisterHL -= 1;
             break;
@@ -696,21 +727,45 @@ function ProcessInstruction(op) {
             break;
         case 0xA7:
             break;
+        // XOR B
         case 0xA8:
+            WriteRegisterA(ReadRegisterB() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
+        // XOR C
         case 0xA9:
+            WriteRegisterA(ReadRegisterC() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
-        case 0xAA:
+        // XOR D
+        case 0xAA: 
+            WriteRegisterA(ReadRegisterD() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
-        case 0xAB:
+        // XOR E
+        case 0xAB: 
+            WriteRegisterA(ReadRegisterE() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
+        // XOR H
         case 0xAC:
+            WriteRegisterA(ReadRegisterH() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
-        case 0xAD:
+        // XOR L
+        case 0xAD: 
+            WriteRegisterA(ReadRegisterL() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
-        case 0xAE:
+        // XOR (HL)
+        case 0xAE: 
+            WriteRegisterA(ReadAddress(RegisterHL) ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
-        case 0xAF:
+        // XOR A
+        case 0xAF: 
+            WriteRegisterA(ReadRegisterA() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
         case 0xB0:
             break;
@@ -748,9 +803,16 @@ function ProcessInstruction(op) {
             break;
         case 0xC1:
             break;
-        case 0xC2:
+        // JP NZ, a16
+        case 0xC2: {
+            let address = Get16BitValue();
+            if(!ReadZFlag())
+                ProgramCounter = address;
             break;
+        }
+        // JP a16
         case 0xC3:
+            ProgramCounter = Get16BitValue();
             break;
         case 0xC4:
             break;
@@ -764,8 +826,13 @@ function ProcessInstruction(op) {
             break;
         case 0xC9:
             break;
-        case 0xCA:
+        // JP Z, a16
+        case 0xCA: {
+            let address = Get16BitValue();
+            if(ReadZFlag())
+                ProgramCounter = address;
             break;
+        }
         case 0xCB:
             break;
         case 0xCC:
@@ -780,8 +847,13 @@ function ProcessInstruction(op) {
             break;
         case 0xD1:
             break;
-        case 0xD2:
+        // JP NC, a16
+        case 0xD2: {
+            let address = Get16BitValue();
+            if(!ReadCFlag())
+                ProgramCounter = address;
             break;
+        }
         case 0xD3:
             break;
         case 0xD4:
@@ -796,8 +868,13 @@ function ProcessInstruction(op) {
             break;
         case 0xD9:
             break;
-        case 0xDA:
+        // JP C, a16
+        case 0xDA: {
+            let address = Get16BitValue();
+            if(ReadCFlag())
+                ProgramCounter = address;
             break;
+        }
         case 0xDB:
             break;
         case 0xDC:
@@ -810,13 +887,13 @@ function ProcessInstruction(op) {
             break;
         // LD (a8), A
         case 0xE0:
-            WriteAddress(Get8BitValue(), ReadRegisterA());
+            WriteAddress(0xFF00+Get8BitValue(), ReadRegisterA());
             break;
         case 0xE1:
             break;
         // LD (C), A
         case 0xE2:
-            WriteAddress(ReadRegisterC(), ReadRegisterA());
+            WriteAddress(0xFF00+ReadRegisterC(), ReadRegisterA());
             break;
         case 0xE3:
             break;
@@ -830,7 +907,9 @@ function ProcessInstruction(op) {
             break;
         case 0xE8:
             break;
+        // JP HL
         case 0xE9:
+            ProgramCounter = RegisterHL;
             break;
         // LD (a16), A
         case 0xEA:
@@ -842,19 +921,22 @@ function ProcessInstruction(op) {
             break;
         case 0xED:
             break;
-        case 0xEE:
+        // XOR d8
+        case 0xEE: 
+            WriteRegisterA(Get8BitValue() ^ ReadRegisterA());
+            if(!ReadRegisterA()) SetZFlag();
             break;
         case 0xEF:
             break;
         // LD A, (a8)
         case 0xF0:
-            WriteRegisterA(ReadAddress(Get8BitValue()));
+            WriteRegisterA(ReadAddress(0xFF00+Get8BitValue()));
             break;
         case 0xF1:
             break;
         // LD A, (C)
         case 0xF2:
-            WriteRegisterA(ReadAddress(ReadRegisterC()));
+            WriteRegisterA(ReadAddress(0xFF00+ReadRegisterC()));
             break;
         case 0xF3:
             break;
@@ -884,7 +966,10 @@ function ProcessInstruction(op) {
             break;
         case 0xFD:
             break;
+        // CP d8
         case 0xFE:
+            if(ReadRegisterA() == Get8BitValue())
+                SetZFlag();
             break;
         case 0xFF:
             break;
