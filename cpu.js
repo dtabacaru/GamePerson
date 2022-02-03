@@ -1,19 +1,42 @@
-const CLK_F         = 4.194304e6; // Clock frequency (Hz)
-const RAM_SIZE      = 8 * 1024;   // 8 KB
-const REGISTER_SIZE = 2;          // Bytes
+// Constants
+const CLK_F         = 4194304;  // Clock frequency (Hz)
+const RAM_SIZE      = 8 * 1024; // 8 KB
+const REGISTER_SIZE = 2;        // Bytes
 
-var Debug = true;
+// Memory
+var RamBuffer     = new ArrayBuffer(RAM_SIZE);
+var Ram           = new DataView(RamBuffer);
+var EchoRamBuffer = new ArrayBuffer(RAM_SIZE);
+var EchoRam       = new DataView(EchoRamBuffer);
+var Rom;
+var Instruction   = 0x00;
 
-var Ram  = new Uint8Array(RAM_SIZE);
-var EchoRam   = new Uint8Array(RAM_SIZE);
-var Rom  = [];
-var RomReader = new FileReader();
-var Instruction = 0x00;
 
+// Helpers
+var RomReader   = new FileReader();
+
+// Flags
+var Debug                 = true;
+var InterruptMasterEnable = false;
+
+// CPU Functions
+
+// ReadRom
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Reads a rom into the Rom variable and starts the CPU.
+//
+// NOTES:
+// In debug mode this will simply read the value of Rom[PC] and update 
+// the UI waiting for the user to manually fetch and decode instructions.
+//
 function ReadRom() {
     RomReader.onload = function () 
     {
-        Rom = new Uint8Array(RomReader.result);
+        Rom = new DataView(RomReader.result);
 
         if (Debug) 
             UpdateNextVarUI();
@@ -23,80 +46,113 @@ function ReadRom() {
     RomReader.readAsArrayBuffer(document.getElementById("RomFileInput").files[0]);
 }
 
+// RunGamePerson()
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Main CPU loop. Fetches 8-bit instructions from where ProgramCounter
+// points to, starting at ROM 0x0100, and executes them.
+//
+// NOTES:
+//
 function RunGamePerson() {
-    while (true) { // Main CPU loop
-        Fetch();
+    while (true) {
+        // TODO: HandleInterrupts();
+        FetchAndDecode();
         Execute();
     }
 }
 
-function NumberToHexString(val, padding) {
-    var jackson_sux = Number(val).toString(16);
-    while (jackson_sux.length < padding) {
-        jackson_sux = "0" + jackson_sux;
-    }
-    return "0x" + jackson_sux.toUpperCase();
-}
-
-function ReadMemBox() {
-    let address = parseInt("0x"+document.getElementById("MemBoxInput").value);
-
-    if (!isNaN(address)) {
-        if (address >= 0 && address <= 0xFFFF) {
-            let lowerByte = ReadAddress(address);
-            let higherByte = address < 0xFFFE ? ReadAddress(address+1) : 0;
-            document.getElementById("MemBoxVar").innerHTML = NumberToHexString(lowerByte | (higherByte << 8), 4);
-        }
-    }
-}
-
-function UpdateNextVarUI() {
-    document.getElementById("NextVar").innerHTML = NumberToHexString((Rom[ProgramCounter] << 8) | Rom[ProgramCounter+1], 4);
-}
-
-function UpdateDebugUI() {
-    document.getElementById("InstructionVar").innerHTML = InstructionStrings[Instruction];
-    document.getElementById("OpcodeVar").innerHTML = NumberToHexString(Instruction, 2);
-    document.getElementById("NextVar").innerHTML = NumberToHexString((Rom[ProgramCounter] << 8) | Rom[ProgramCounter+1], 4);
-    document.getElementById("ProgramCounterVar").innerHTML = NumberToHexString(ProgramCounter, 4);
-    document.getElementById("StackPointerVar").innerHTML = NumberToHexString(StackPointer, 4);
-    document.getElementById("AFVar").innerHTML = NumberToHexString(RegisterAF, 4);
-    document.getElementById("BCVar").innerHTML = NumberToHexString(RegisterBC, 4);
-    document.getElementById("DEVar").innerHTML = NumberToHexString(RegisterDE, 4);
-    document.getElementById("HLVar").innerHTML = NumberToHexString(RegisterHL, 4);
-
-    document.getElementById("FetchButton").disabled = !document.getElementById("FetchButton").disabled;
-    document.getElementById("ExecuteButton").disabled = !document.getElementById("ExecuteButton").disabled;
-}
-
-function Fetch() {
-    Instruction = Get8BitValue();
+// FetchAndDecode()
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Fetches and decodes the next 8-bit instruction.
+//
+// NOTES:
+// Debug UI is updated if Debug flag is set.
+//
+function FetchAndDecode() {
+    Instruction = ReadAndIncrementPC8Bit();
     if(Debug) UpdateDebugUI();
 }
 
+// Execute()
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Executes the last decoded instruction.
+//
+// NOTES:
+// Debug UI is updated if Debug flag is set.
+//
 function Execute() {
-    ProcessInstruction(Instruction);
+    ExecuteInstruction(Instruction);
     if(Debug) UpdateDebugUI();
 }
 
-function Get8BitValue() {
-    let jackson_sux = Rom[ProgramCounter];
-    ProgramCounter += 1; // 8 bit cpu = 1 byte increments
-    return jackson_sux;
+// Read8BitPcValue()
+//
+// IN:  n/a
+// OUT: 8-bit value pointed to by ProgramCounter
+//
+// DESCRIPTION:
+// Reads the 8-bit value pointed to by ProgramCounter and
+// increments ProgramCounter by 1.
+//
+// NOTES:
+//
+function ReadAndIncrementPC8Bit() {
+    return Rom.getUint8(ProgramCounter++);
 }
 
-function GetSigned8BitValue() {
-    let jackson_sux = new DataView(Rom.buffer, ProgramCounter, 1).getInt8(0, true);
-    ProgramCounter += 1; // 8 bit cpu = 1 byte increments
-    return jackson_sux;
+// ReadAndIncrementPC8BitSigned()
+//
+// IN:  n/a
+// OUT: 8-bit signed value pointed to by ProgramCounter
+//
+// DESCRIPTION:
+// Reads the 8-bit signed value pointed to by ProgramCounter and
+// increments ProgramCounter by 1.
+//
+// NOTES:
+//
+function ReadAndIncrementPC8BitSigned() {
+    return Rom.getInt8(ProgramCounter++);
 }
 
-function Get16BitValue() {
-    return Get8BitValue() + (Get8BitValue() << 8);
+// Read16BitPcValue()
+//
+// IN:  n/a
+// OUT: 16-bit value pointed to by ProgramCounter
+//
+// DESCRIPTION:
+// Reads the 16-bit value pointed to by ProgramCounter and
+// increments ProgramCounter by 2.
+//
+// NOTES:
+//
+function ReadAndIncrementPC16Bit() {
+    return ReadAndIncrementPC8Bit() + (ReadAndIncrementPC8Bit() << 8);
 }
 
+// ReadAddress(address)
+//
+// IN:  address: 16-bit address to read from
+// OUT: 8-bit value pointed to by address
+//
+// DESCRIPTION:
+// Reads the 8-bit value pointed to by address.
+//
+// NOTES:
 // https://gbdev.gg8.se/wiki/articles/Memory_Map
-// TODO: Implement me!
+//
 function ReadAddress(address) {
     if (address > 0xFFFE) {        // (FFFF-FFFF) Interrupts Enable Register (IE)
 
@@ -112,23 +168,30 @@ function ReadAddress(address) {
 
     } else if (address > 0xBFFF) { // (C000-DFFF) 8KB Work RAM (WRAM) bank 0+1	
         address -= 0xC000;
-        return Ram[address];
+        return Ram.getUint8(address);
     } else if (address > 0x9FFF) { // (A000-BFFF) 8KB External RAM In cartridge, switchable bank if any
 
     } else if (address > 0x7FFF) { // (8000-9FFF) 8KB Video RAM (VRAM) Only bank 0 in Non-CGB mode
 
     } else {                       // (0000-3FFF) 16KB ROM bank 00 From cartridge, usually a fixed bank
         // address -= 0;
-        return Rom[address];
+        return Rom.getUint8(address);
     }
 }
 
+// WriteAddress(address, val)
+//
+// IN:  address: 16-bit address to write to
+//      val:     8-bit value to write
+// OUT: n/a
+//
+// DESCRIPTION:
+// Writes the 8-bit value val to the address pointed to by address.
+//
+// NOTES:
 // https://gbdev.gg8.se/wiki/articles/Memory_Map
-// TODO: Implement me!
+//
 function WriteAddress(address, val) {
-
-    //TODO: val check? handle rollover here?
-
     if (address > 0xFFFE) {        // (FFFF-FFFF) Interrupts Enable Register (IE)
 
     } else if (address > 0xFF7F) { // (FF80-FFFE)   High RAM (HRAM)
@@ -143,7 +206,7 @@ function WriteAddress(address, val) {
 
     } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1
         address -= 0xC000;
-        Ram[address] = val;
+        Ram.setUint8(address, val);
         return;
     } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
 
@@ -151,45 +214,81 @@ function WriteAddress(address, val) {
 
     } else {                       // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
         //address -= 0;
-        Rom[address] = val;
+        Rom.setUint8(address, val);
         return;
     }
 }
 
-function ProcessInstruction(op) {
-    switch (op) {
+// ExecuteInstruction(opcode)
+//
+// IN:  opcode: CPU instruction code
+// OUT: n/a
+//
+// DESCRIPTION:
+// Executes the CPU instruction specified by opcode.
+//
+// NOTES:
+// https://meganesulli.com/generate-gb-opcodes/
+//
+// Flags denoted by ---- ZNHC
+//
+function ExecuteInstruction(opcode) {
+    switch (opcode) {
         // NOP
+        // ----
         case 0x00:
             break;
         // LD BC, d16
+        // ----
         case 0x01:
-            RegisterBC = Get16BitValue();
+            WriteRegisterBC(ReadAndIncrementPC16Bit());
             break;
         // LD (BC), A
+        // ----
         case 0x02:
             WriteAddress(RegisterBC, ReadRegisterA());
             break;
         // INC BC
+        // ----
         case 0x03:
+            WriteRegisterBC(RegisterBC + 1);
             break;
         // INC B
-        case 0x04:
+        // Z0H-
+        case 0x04: {
+            let old_val = ReadRegisterB();
+            WriteRegisterB(old_val + 1);
+            UnsetNFlag();
+            if(!ReadRegisterB())
+                SetZFlag();
+            if(((old_val & 0x0F)+1) & 0x10)
+                SetHFlag();
             break;
+        }
         // DEC B
-        case 0x05:
+        // Z1H-
+        case 0x05: {
+            let old_val = ReadRegisterB();
+            WriteRegisterB(old_val - 1);
+            SetNFlag();
+            if(!ReadRegisterB())
+                SetZFlag();
+            if(((old_val & 0x0F)-1) & 0x10) //
+                SetHFlag();
             break;
+        }
         // LD B, d8
         case 0x06:
-            WriteRegisterB(Get8BitValue());
+            WriteRegisterB(ReadAndIncrementPC8Bit());
             break;
         // RLCA    
         case 0x07:
             break;
         // LD (a16), SP
         case 0x08: {
-            let address = Get16BitValue();
-            WriteAddress(address,   ReadRegisterP());
-            WriteAddress(address+1, ReadRegisterS());
+            let address = ReadAndIncrementPC16Bit();
+            WriteAddress(address,     ReadRegisterP());
+            WriteAddress(address + 1, ReadRegisterS());
             break;
         }
         // ADD HL, BC
@@ -201,6 +300,7 @@ function ProcessInstruction(op) {
             break;
         // DEC BC
         case 0x0B:
+            WriteRegisterBC(RegisterBC - 1);
             break;
         // INC C
         case 0x0C:
@@ -210,7 +310,7 @@ function ProcessInstruction(op) {
             break;
         // LD C, d8
         case 0x0E:
-            WriteRegisterC(Get8BitValue());
+            WriteRegisterC(ReadAndIncrementPC8Bit());
             break;
         // RRCA
         case 0x0F:
@@ -220,7 +320,7 @@ function ProcessInstruction(op) {
             break;
         // LD DE, d16
         case 0x11:
-            RegisterDE = Get16BitValue();
+            WriteRegisterDE(ReadAndIncrementPC16Bit());
             break;
         // LD(DE), A
         case 0x12:
@@ -228,6 +328,7 @@ function ProcessInstruction(op) {
             break;
         // INC DE
         case 0x13:
+            WriteRegisterDE(RegisterDE + 1);
             break;
         // INC D
         case 0x14:
@@ -237,24 +338,25 @@ function ProcessInstruction(op) {
             break;
         // LD D, d8
         case 0x16:
-            WriteRegisterD(Get8BitValue());
+            WriteRegisterD(ReadAndIncrementPC8Bit());
             break;
         // RLA
         case 0x17:
             break;
         // JR s8
         case 0x18:
-            ProgramCounter += GetSigned8BitValue();
+            ProgramCounter += ReadAndIncrementPC8BitSigned();
             break;
         // ADD HL, DE
         case 0x19:
             break;
         // LD A, (DE)
         case 0x1A:
-            WriteRegisterA(ReadAddress(ReadRegisterDE));
+            WriteRegisterA(ReadAddress(RegisterDE));
             break;
         // DEC DE
         case 0x1B:
+            WriteRegisterDE(RegisterDE - 1);
             break;
         // INC E
         case 0x1C:
@@ -264,29 +366,30 @@ function ProcessInstruction(op) {
             break;
         // LD E, d8
         case 0x1E:
-            WriteRegisterE(Get8BitValue());
+            WriteRegisterE(ReadAndIncrementPC8Bit());
             break;
         // RRA
         case 0x1F:
             break;
         // JR NZ, s8
         case 0x20: {
-            let offset = GetSigned8BitValue();
+            let offset = ReadAndIncrementPC8BitSigned();
             if(!ReadZFlag())
                 ProgramCounter += offset;
             break;
         }
         // LD HL, d16
         case 0x21:
-            RegisterHL = Get16BitValue();
+            WriteRegisterHL(ReadAndIncrementPC16Bit());
             break;
         // LD (HL+), A
         case 0x22:
             WriteAddress(RegisterHL, ReadRegisterA());
-            RegisterHL += 1;
+            WriteRegisterHL(RegisterHL + 1);
             break;
         // INC HL
         case 0x23:
+            WriteRegisterHL(RegisterHL + 1);
             break;
         // INC H
         case 0x24:
@@ -296,14 +399,14 @@ function ProcessInstruction(op) {
             break;
         // LD H, d8
         case 0x26:
-            WriteRegisterH(Get8BitValue());
+            WriteRegisterH(ReadAndIncrementPC8Bit());
             break;
         // DAA
         case 0x27:
             break;
         // JR Z, s8
         case 0x28: {
-            let offset = GetSigned8BitValue();
+            let offset = ReadAndIncrementPC8BitSigned();
             if(ReadZFlag())
                 ProgramCounter += offset;
             break;
@@ -314,10 +417,11 @@ function ProcessInstruction(op) {
         // LD A, (HL+)
         case 0x2A:
             WriteRegisterA(ReadAddress(RegisterHL));
-            RegisterHL += 1;
+            WriteRegisterHL(RegisterHL + 1);
             break;
         // DEC HL
         case 0x2B:
+            WriteRegisterHL(RegisterHL - 1);
             break;
         // INC L
         case 0x2C:
@@ -327,29 +431,30 @@ function ProcessInstruction(op) {
             break;
         // LD L, d8
         case 0x2E:
-            WriteRegisterL(Get8BitValue());
+            WriteRegisterL(ReadAndIncrementPC8Bit());
             break;
         // CPL
         case 0x2F:
             break;
         // JR NC, s8
         case 0x30: {
-            let offset = GetSigned8BitValue();
+            let offset = ReadAndIncrementPC8BitSigned();
             if(!ReadCFlag())
                 ProgramCounter += offset;
             break;
         }
         // LD SP, d16
         case 0x31:
-            StackPointer = Get16BitValue();
+            WriteRegisterSP(ReadAndIncrementPC16Bit());
             break;
         // LD(HL-), A
         case 0x32:
             WriteAddress(RegisterHL, ReadRegisterA());
-            RegisterHL -= 1;
+            WriteRegisterHL(RegisterHL-1);
             break;
         // INC SP
         case 0x33:
+            WriteRegisterSP(StackPointer + 1);
             break;
         // INC (HL)
         case 0x34:
@@ -359,14 +464,14 @@ function ProcessInstruction(op) {
             break;
         // LD(HL), d8
         case 0x36:
-            WriteAddress(RegisterHL, Get8BitValue());
+            WriteAddress(RegisterHL, ReadAndIncrementPC8Bit());
             break;
         // SCF
         case 0x37:
             break;
         // JR C, s8
         case 0x38: {
-            let offset = GetSigned8BitValue();
+            let offset = ReadAndIncrementPC8BitSigned();
             if(ReadCFlag())
                 ProgramCounter += offset;
             break;
@@ -377,7 +482,7 @@ function ProcessInstruction(op) {
         // LD A, (HL-)
         case 0x3A:    
             WriteRegisterA(ReadAddress(RegisterHL));
-            RegisterHL -= 1;
+            WriteRegisterHL(RegisterHL-1);
             break;
         // DEC SP
         case 0x3B:
@@ -390,7 +495,7 @@ function ProcessInstruction(op) {
             break;
         // LD A, d8
         case 0x3E:
-            WriteRegisterA(Get8BitValue());
+            WriteRegisterA(ReadAndIncrementPC8Bit());
             break;
         // CCF
         case 0x3F:
@@ -805,14 +910,14 @@ function ProcessInstruction(op) {
             break;
         // JP NZ, a16
         case 0xC2: {
-            let address = Get16BitValue();
+            let address = ReadAndIncrementPC16Bit();
             if(!ReadZFlag())
                 ProgramCounter = address;
             break;
         }
         // JP a16
         case 0xC3:
-            ProgramCounter = Get16BitValue();
+            ProgramCounter = ReadAndIncrementPC16Bit();
             break;
         case 0xC4:
             break;
@@ -828,7 +933,7 @@ function ProcessInstruction(op) {
             break;
         // JP Z, a16
         case 0xCA: {
-            let address = Get16BitValue();
+            let address = ReadAndIncrementPC16Bit();
             if(ReadZFlag())
                 ProgramCounter = address;
             break;
@@ -849,7 +954,7 @@ function ProcessInstruction(op) {
             break;
         // JP NC, a16
         case 0xD2: {
-            let address = Get16BitValue();
+            let address = ReadAndIncrementPC16Bit();
             if(!ReadCFlag())
                 ProgramCounter = address;
             break;
@@ -870,7 +975,7 @@ function ProcessInstruction(op) {
             break;
         // JP C, a16
         case 0xDA: {
-            let address = Get16BitValue();
+            let address = ReadAndIncrementPC16Bit();
             if(ReadCFlag())
                 ProgramCounter = address;
             break;
@@ -887,7 +992,7 @@ function ProcessInstruction(op) {
             break;
         // LD (a8), A
         case 0xE0:
-            WriteAddress(0xFF00+Get8BitValue(), ReadRegisterA());
+            WriteAddress(0xFF00+ReadAndIncrementPC8Bit(), ReadRegisterA());
             break;
         case 0xE1:
             break;
@@ -913,7 +1018,7 @@ function ProcessInstruction(op) {
             break;
         // LD (a16), A
         case 0xEA:
-            WriteAddress(Get16BitValue(), ReadRegisterA());
+            WriteAddress(ReadAndIncrementPC16Bit(), ReadRegisterA());
             break;
         case 0xEB:
             break;
@@ -923,14 +1028,14 @@ function ProcessInstruction(op) {
             break;
         // XOR d8
         case 0xEE: 
-            WriteRegisterA(Get8BitValue() ^ ReadRegisterA());
+            WriteRegisterA(ReadAndIncrementPC8Bit() ^ ReadRegisterA());
             if(!ReadRegisterA()) SetZFlag();
             break;
         case 0xEF:
             break;
         // LD A, (a8)
         case 0xF0:
-            WriteRegisterA(ReadAddress(0xFF00+Get8BitValue()));
+            WriteRegisterA(ReadAddress(0xFF00+ReadAndIncrementPC8Bit()));
             break;
         case 0xF1:
             break;
@@ -940,7 +1045,9 @@ function ProcessInstruction(op) {
             break;
         case 0xF3:
             break;
+        // DI
         case 0xF4:
+            InterruptMasterEnable = false;
             break;
         case 0xF5:
             break;
@@ -950,17 +1057,19 @@ function ProcessInstruction(op) {
             break;
         // LD HL, SP+s8
         case 0xF8:
-            RegisterHL = StackPointer + GetSigned8BitValue();
+            WriteRegisterHL(StackPointer + ReadAndIncrementPC8BitSigned());
             break;
         // LD SP, HL
         case 0xF9:
-            StackPointer = RegisterHL;
+            WriteRegisterSP(RegisterHL);
             break;
         // LD A, (a16)
         case 0xFA:
-            WriteRegisterA(ReadAddress(Get16BitValue()));
+            WriteRegisterA(ReadAddress(ReadAndIncrementPC16Bit()));
             break;
+        // EI
         case 0xFB:
+            InterruptMasterEnable = true;
             break;
         case 0xFC:
             break;
@@ -968,10 +1077,92 @@ function ProcessInstruction(op) {
             break;
         // CP d8
         case 0xFE:
-            if(ReadRegisterA() == Get8BitValue())
+            if(ReadRegisterA() == ReadAndIncrementPC8Bit())
                 SetZFlag();
             break;
         case 0xFF:
             break;
     }
+}
+
+// Helper Functions
+
+// NumberToHexString(val, padding)
+//
+// IN:  val:     Decimal value to convert to hex
+//      padding: Number of 0s to pad
+// OUT: n/a
+//
+// DESCRIPTION:
+// Returns a hex string representation of val, with padding number of digits.
+//
+// NOTES:
+//
+function NumberToHexString(val, padding) {
+    var jackson_sux = Number(val).toString(16);
+    while (jackson_sux.length < padding) {
+        jackson_sux = "0" + jackson_sux;
+    }
+    return "0x" + jackson_sux.toUpperCase();
+}
+
+// ReadMemBox()
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Updates the read memory UI elements
+//
+// NOTES:
+//
+function ReadMemBox() {
+    let jackson_sux = parseInt("0x"+document.getElementById("MemBoxInput").value);
+
+    if (!isNaN(jackson_sux)) {
+        if (jackson_sux >= 0 && jackson_sux <= 0xFFFF) {
+            let lowerByte = ReadAddress(jackson_sux);
+            let higherByte = jackson_sux < 0xFFFE ? ReadAddress(jackson_sux+1) : 0;
+            document.getElementById("MemBoxVar").innerHTML = NumberToHexString(lowerByte | (higherByte << 8), 4);
+        }
+    }
+}
+
+// UpdateNextVarUI()
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Updates the Rom[PC] UI element
+//
+// NOTES:
+//
+function UpdateNextVarUI() {
+    document.getElementById("NextVar").innerHTML = NumberToHexString((Rom.getUint8(ProgramCounter) << 8) | Rom.getUint8(ProgramCounter+1) , 4);
+}
+
+// UpdateDebugUI()
+//
+// IN:  n/a
+// OUT: n/a
+//
+// DESCRIPTION:
+// Updates the Debug Fetch/Execute UI elements
+//
+// NOTES:
+// 
+function UpdateDebugUI() {
+    document.getElementById("InstructionVar").innerHTML = InstructionStrings[Instruction];
+    document.getElementById("OpcodeVar").innerHTML = NumberToHexString(Instruction, 2);
+    document.getElementById("NextVar").innerHTML = NumberToHexString((Rom.getUint8(ProgramCounter) << 8) | Rom.getUint8(ProgramCounter+1) , 4);
+    document.getElementById("ProgramCounterVar").innerHTML = NumberToHexString(ProgramCounter, 4);
+    document.getElementById("StackPointerVar").innerHTML = NumberToHexString(StackPointer, 4);
+    document.getElementById("AFVar").innerHTML = NumberToHexString(RegisterAF, 4);
+    document.getElementById("BCVar").innerHTML = NumberToHexString(RegisterBC, 4);
+    document.getElementById("DEVar").innerHTML = NumberToHexString(RegisterDE, 4);
+    document.getElementById("HLVar").innerHTML = NumberToHexString(RegisterHL, 4);
+
+    document.getElementById("FetchButton").disabled = !document.getElementById("FetchButton").disabled;
+    document.getElementById("ExecuteButton").disabled = !document.getElementById("ExecuteButton").disabled;
 }

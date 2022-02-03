@@ -1,3 +1,4 @@
+// https://meganesulli.com/generate-gb-opcodes/
 var InstructionStrings = new Array(0xFF);
 InstructionStrings [0x00] = "NOP";
 InstructionStrings [0x01] = "LD BC, d16";

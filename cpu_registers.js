@@ -16,6 +16,10 @@ function ReadRegisterP() {
     return StackPointer & 0x00FF;
 }
 
+function WriteRegisterSP(val) {
+    StackPointer = val % 0xFFFF;
+}
+
 /*** AF ***/
 
 function ReadZFlag() {
@@ -26,7 +30,7 @@ function SetZFlag() {
     WriteRegisterF(ReadRegisterF() | 0b10000000);
 }
 
-function UnSetZFlag() {
+function UnsetZFlag() {
     WriteRegisterF(ReadRegisterF() & ~0b10000000);
 }
 
@@ -38,7 +42,7 @@ function SetNFlag() {
     WriteRegisterF(ReadRegisterF() |  0b01000000);
 }
 
-function UnSetNFlag() {
+function UnsetNFlag() {
     WriteRegisterF(ReadRegisterF() & ~0b01000000);
 }
 
@@ -50,7 +54,7 @@ function SetHFlag() {
     WriteRegisterF(ReadRegisterF() |  0b00100000);
 }
 
-function UnSetHFlag() {
+function UnsetHFlag() {
     WriteRegisterF(ReadRegisterF() & ~0b00100000);
 }
 
@@ -62,7 +66,7 @@ function SetCFlag() {
     WriteRegisterF(ReadRegisterF() |  0b00010000);
 }
 
-function UnSetCFlag() {
+function UnsetCFlag() {
     WriteRegisterF(ReadRegisterF() &= ~0b00010000);
 }
 
@@ -75,11 +79,17 @@ function ReadRegisterF() {
 }
 
 function WriteRegisterA(val) {
+    val %= 0xFF;
     RegisterAF = (val << 8) | (RegisterAF & 0x00FF)
 }
 
 function WriteRegisterF(val) {
+    val %= 0xFF;
     RegisterAF = (RegisterAF & 0xFF00) | val;
+}
+
+function WriteRegisterAF(val) {
+    RegisterAF = val % 0xFFFF;
 }
 
 /*** BC ***/
@@ -93,11 +103,17 @@ function ReadRegisterC() {
 }
 
 function WriteRegisterB(val) {
+    val %= 0xFF;
     RegisterBC = (val << 8) | (RegisterBC & 0x00FF)
 }
 
 function WriteRegisterC(val) {
+    val %= 0xFF;
     RegisterBC = (RegisterBC & 0xFF00) | val;
+}
+
+function WriteRegisterBC(val) {
+    RegisterBC = val % 0xFFFF;
 }
 
 /*** DE ***/
@@ -111,11 +127,17 @@ function ReadRegisterE() {
 }
 
 function WriteRegisterD(val) {
+    val %= 0xFF;
     RegisterDE = (val << 8) | (RegisterDE & 0x00FF)
 }
 
 function WriteRegisterE(val) {
+    val %= 0xFF;
     RegisterDE = (RegisterDE & 0xFF00) | val;
+}
+
+function WriteRegisterDE(val) {
+    RegisterDE = val % 0xFFFF;
 }
 
 /*** HL ***/
@@ -129,9 +151,15 @@ function ReadRegisterL() {
 }
 
 function WriteRegisterH(val) {
+    val %= 0xFF;
     RegisterHL = (val << 8) | (RegisterHL & 0x00FF)
 }
 
 function WriteRegisterL(val) {
+    val %= 0xFF;
     RegisterHL = (RegisterHL & 0xFF00) | val;
+}
+
+function WriteRegisterHL(val) {
+    RegisterHL = val % 0xFFFF;
 }

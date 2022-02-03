@@ -9,7 +9,7 @@
 			}
 			td {
 				text-align: right;
-				width: 105px;
+				width: 100px;
 			}
 		</style>
 	</head>
@@ -44,7 +44,7 @@
 					<td id="OpcodeVar"></td>
 				</tr>
 				<tr>
-					<th>Rom[PC]:</th>
+					<th>Rom[PC] [0...end]:</th>
 					<td id="NextVar"></td>
 				</tr>
 				<tr>
@@ -72,11 +72,11 @@
 					<td id="HLVar">0x0000</td>
 				</tr>
 				<tr>
-					<th>[0x<input type="text" id="MemBoxInput" style="width: 50px" onchange="ReadMemBox()" />]</th>
+					<th>[0x<input type="text" id="MemBoxInput" style="width: 50px" onchange="ReadMemBox()" />] (LE)</th>
 					<td id="MemBoxVar">0x0000</td>
 				</tr>
 			</table>
-			<input type="button" value="Fetch"   id="FetchButton"   onclick="Fetch()"/>
+			<input type="button" value="Fetch"   id="FetchButton"   onclick="FetchAndDecode()"/>
 			<input type="button" value="Execute" id="ExecuteButton" onclick="Execute()" disabled/>
 		</div>
 
