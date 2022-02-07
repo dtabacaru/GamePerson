@@ -1,165 +1,232 @@
-var StackPointer   = 0;
-var ProgramCounter = 0x0100;  // ROM application starts at 0x0100
+// Constants
+const RESET_VECTOR  = 0x0100; // ROM application starts at 0x0100. Skip the boot rom.
+const LITTLE_ENDIAN = true;
 
-var RegisterAF = 0; // A = Accumulator; F = Flag; A = High, F = Low
-var RegisterBC = 0; // Gen storage; B = High, C = Low
-var RegisterDE = 0; // Gen storage; D = High, E = Low
-var RegisterHL = 0; // Gen storage / memory pointer; H = High, L = Low
+// Program Counter
+const PCBuffer = new ArrayBuffer(2);
+const PC = new DataView(PCBuffer);
+Write16BitReg(PC, RESET_VECTOR);
 
-/*** SP ***/
+// Stack Pointer
+const SPBuffer = new ArrayBuffer(2);
+const SP = new DataView(SPBuffer);
+const P = 0;
+const S = 1;
 
-function ReadRegisterS() {
-    return (StackPointer & 0xFF00) >> 8;
+// AF - Accumulator/Flags
+const AFBuffer = new ArrayBuffer(2);
+const AF = new DataView(AFBuffer);
+const F = 0;
+const A = 1;
+const F_Z = 7;
+const F_N = 6;
+const F_H = 5;
+const F_C = 4;
+
+// BC - Gen Storage
+const BCBuffer = new ArrayBuffer(2);
+const BC = new DataView(BCBuffer);
+const C = 0;
+const B = 1;
+
+// DE - Gen Storage
+const DEBuffer = new ArrayBuffer(2);
+const DE = new DataView(DEBuffer);
+const E = 0;
+const D = 1;
+
+// HL - Address Pointer
+const HLBuffer = new ArrayBuffer(2);
+const HL = new DataView(HLBuffer);
+const L = 0;
+const H = 1;
+
+// Read16BitReg(RR)
+//
+// IN:  RR: 16-bit register to read (DataView)
+// OUT: 16-bit value of register (Int)
+//
+// DESCRIPTION:
+// Reads the 16-bit value of register RR.
+//
+function Read16BitReg(RR) {
+    return RR.getUint16(0, LITTLE_ENDIAN);
 }
 
-function ReadRegisterP() {
-    return StackPointer & 0x00FF;
+// Write16BitReg(RR, val)
+//
+// IN:  RR:  16-bit register to write (DataView)
+//      val: value to write (Int)
+// OUT: n/a
+//
+// DESCRIPTION:
+// Writes the value val to 16-bit register RR.
+//
+function Write16BitReg(RR, val) {
+    RR.setUint16(0, val, LITTLE_ENDIAN);
 }
 
-function WriteRegisterSP(val) {
-    StackPointer = val % 0xFFFF;
+// Read8BitReg(R, RR)
+//
+// IN:  R:  Index of 8-bit register within 16-bit register (Int)
+//      RR: 16-bit register that contains 8-bit register  (DataView)
+// OUT: 8-bit value of register (Int)
+//
+// DESCRIPTION:
+// Reads the 8-bit value of register R.
+//
+// NOTES:
+// Indices are defined above and can be accessed easily
+// e.g. var regAVal = Read8BitReg(A, AF);
+//
+function Read8BitReg(R, RR) {
+    return RR.getUint8(R);
 }
 
-/*** AF ***/
-
-function ReadZFlag() {
-    return ReadRegisterF() & 0b10000000;
+// Write8BitReg(R, RR, val)
+//
+// IN:  R:   Index of 8-bit register within 16-bit register (Int)
+//      RR:  16-bit register that contains 8-bit register (DataView)
+//      val: value to write (Int)
+// OUT: n/a
+//
+// DESCRIPTION:
+// Writes the value val to 8-bit register R.
+//
+// NOTES:
+// Indices are defined above and can be accessed easily
+// e.g. Write8BitReg(A, AF, 0xFF);
+//
+function Write8BitReg(R, RR, val) {
+    return RR.setUint8(R, val);
 }
 
-function SetZFlag() {
-    WriteRegisterF(ReadRegisterF() | 0b10000000);
+// SetFlag(F)
+//
+// IN:  F:   Index of flag to set
+// OUT: n/a
+//
+// DESCRIPTION:
+// Sets flag F.
+//
+// NOTES:
+// Indices are defined above and can be accessed easily
+// e.g. SetFlag(F_N);
+//
+function SetFlag(F) {
+    let jackson_sux = Read8BitReg(F, AF) | (1 << F);
+    Write8BitReg(F, AF, jackson_sux);
 }
 
-function UnsetZFlag() {
-    WriteRegisterF(ReadRegisterF() & ~0b10000000);
+// ResetFlag(F)
+//
+// IN:  F:   Index of flag to reset
+// OUT: n/a
+//
+// DESCRIPTION:
+// Resets flag F.
+//
+// NOTES:
+// Indices are defined above and can be accessed easily
+// e.g. ResetFlag(F_N);
+//
+function ResetFlag(F) {
+    let jackson_sux = Read8BitReg(F, AF) & ~(1 << F);
+    Write8BitReg(F, AF, jackson_sux);
 }
 
-function ReadNFlag() {
-    return ReadRegisterF() & 0b01000000;
+// ReadFlag(F)
+//
+// IN:  F:   Index of flag to read
+// OUT: Value of flag
+//
+// DESCRIPTION:
+// Reads flag F.
+//
+// NOTES:
+// Indices are defined above and can be accessed easily
+// e.g. ReadFlag(F_N);
+//
+function ReadFlag(F) {
+    return Read8BitReg(F, AF) & (1 << F);
 }
 
-function SetNFlag() {
-    WriteRegisterF(ReadRegisterF() |  0b01000000);
+// SetZeroFlag(val)
+//
+// IN:  val1: value to check
+// OUT: n/a
+//
+// Description:
+// Sets the zero flag if val is zero, otherwise resets it.
+//
+function SetZeroFlag(val) {
+    if (!val) SetFlag(F_Z);
+    else ResetFlag(F_Z);
 }
 
-function UnsetNFlag() {
-    WriteRegisterF(ReadRegisterF() & ~0b01000000);
+// SetSubtractionFlag(val)
+//
+// IN:  val1: value to check
+// OUT: n/a
+//
+// Description:
+// Sets the subtraction flag if val is negative, otherwise resets it.
+//
+function SetSubtractionFlag(val) {
+    if (val < 0) SetFlag(F_N);
+    else ResetFlag(F_N);
 }
 
-function ReadHFlag() {
-    return ReadRegisterF() & 0b00100000;
+// SetHalfCarry(val1, val2)
+//
+// IN:  val1: value of first opearand
+//      val2: value of second operand
+// OUT: n/a
+//
+// Description:
+// Sets the half carry flag if val1 + val2 carries bit 4, otherwise resets it
+//
+function SetHalfCarryFlagBit3To4(val1, val2) {
+    if ((((val1 & 0xf) + (val2 & 0xf)) & 0x10) == 0x10) SetFlag(F_H);
+    else ResetFlag(F_H);
 }
 
-function SetHFlag() {
-    WriteRegisterF(ReadRegisterF() |  0b00100000);
+// SetHalfCarryFlagBit11To12(val1, val2)
+//
+// IN:  val1: value of first opearand
+//      val2: value of second operand
+// OUT: n/a
+//
+// Description:
+// Sets the half carry flag if val1 + val2 carries bit 12, otherwise resets it
+//
+function SetHalfCarryFlagBit11To12(val1, val2) {
+    if (((((val1>>8) & 0xf) + ((val2>>8) & 0xf)) & 0x10) == 0x10) SetFlag(F_H);
+    else ResetFlag(F_H);
 }
 
-function UnsetHFlag() {
-    WriteRegisterF(ReadRegisterF() & ~0b00100000);
+// SetCarryFlag8Bit(result)
+//
+// IN:  result: result of operation
+// OUT: n/a
+//
+// Description:
+// Sets the carry flag if result is > 0xFF, otherwise resets it
+//
+function SetCarryFlag8Bit(result) {
+    if (result > 0xFF) SetFlag(F_C);
+    else ResetFlag(F_C);
 }
 
-function ReadCFlag() {
-    return ReadRegisterF() & 0b00010000;
-}
-
-function SetCFlag() {
-    WriteRegisterF(ReadRegisterF() |  0b00010000);
-}
-
-function UnsetCFlag() {
-    WriteRegisterF(ReadRegisterF() &= ~0b00010000);
-}
-
-function ReadRegisterA() {
-    return (RegisterAF & 0xFF00) >> 8;
-}
-
-function ReadRegisterF() {
-    return RegisterAF & 0x00FF;
-}
-
-function WriteRegisterA(val) {
-    val %= 0xFF;
-    RegisterAF = (val << 8) | (RegisterAF & 0x00FF)
-}
-
-function WriteRegisterF(val) {
-    val %= 0xFF;
-    RegisterAF = (RegisterAF & 0xFF00) | val;
-}
-
-function WriteRegisterAF(val) {
-    RegisterAF = val % 0xFFFF;
-}
-
-/*** BC ***/
-
-function ReadRegisterB() {
-    return (RegisterBC & 0xFF00) >> 8;
-}
-
-function ReadRegisterC() {
-    return RegisterBC & 0x00FF;
-}
-
-function WriteRegisterB(val) {
-    val %= 0xFF;
-    RegisterBC = (val << 8) | (RegisterBC & 0x00FF)
-}
-
-function WriteRegisterC(val) {
-    val %= 0xFF;
-    RegisterBC = (RegisterBC & 0xFF00) | val;
-}
-
-function WriteRegisterBC(val) {
-    RegisterBC = val % 0xFFFF;
-}
-
-/*** DE ***/
-
-function ReadRegisterD() {
-    return (RegisterDE & 0xFF00) >> 8;
-}
-
-function ReadRegisterE() {
-    return RegisterDE & 0x00FF;
-}
-
-function WriteRegisterD(val) {
-    val %= 0xFF;
-    RegisterDE = (val << 8) | (RegisterDE & 0x00FF)
-}
-
-function WriteRegisterE(val) {
-    val %= 0xFF;
-    RegisterDE = (RegisterDE & 0xFF00) | val;
-}
-
-function WriteRegisterDE(val) {
-    RegisterDE = val % 0xFFFF;
-}
-
-/*** HL ***/
-
-function ReadRegisterH() {
-    return (RegisterHL & 0xFF00) >> 8;
-}
-
-function ReadRegisterL() {
-    return RegisterHL & 0x00FF;
-}
-
-function WriteRegisterH(val) {
-    val %= 0xFF;
-    RegisterHL = (val << 8) | (RegisterHL & 0x00FF)
-}
-
-function WriteRegisterL(val) {
-    val %= 0xFF;
-    RegisterHL = (RegisterHL & 0xFF00) | val;
-}
-
-function WriteRegisterHL(val) {
-    RegisterHL = val % 0xFFFF;
+// SetCarryFlag16Bit(result)
+//
+// IN:  result: result of operation
+// OUT: n/a
+//
+// Description:
+// Sets the carry flag if result is > 0xFFFF, otherwise resets it
+//
+function SetCarryFlag16Bit(result) {
+    if (result > 0xFFFF) SetFlag(F_C);
+    else ResetFlag(F_C);
 }
