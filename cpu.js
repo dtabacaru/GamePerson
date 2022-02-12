@@ -202,7 +202,6 @@ function WriteAddress(address, val) {
     } else if (address > 0xBFFF) { // (C000-DFFF)   8KB Work RAM (WRAM) bank 0+1
         address -= 0xC000;
         Ram.setUint8(address, val);
-        return;
     } else if (address > 0x9FFF) { // (A000-BFFF)   8KB External RAM	In cartridge, switchable bank if any
 
     } else if (address > 0x7FFF) { // (8000-9FFF)   8KB Video RAM (VRAM)	Only bank 0 in Non-CGB mode
@@ -210,7 +209,6 @@ function WriteAddress(address, val) {
     } else {                       // (0000-3FFF)	16KB ROM bank 00	From cartridge, usually a fixed bank
         //address -= 0;
         Rom.setUint8(address, val);
-        return;
     }
 }
 
