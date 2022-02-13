@@ -1,12 +1,13 @@
-// Generic Instructions
+// Instructions
 // Flags: Z N H -
-function ADD_R(R, RR, val2) {
+function ADD_R(R, RR, val2, carry = false) {
     let val1 = Read8BitReg(R, RR);
     let result = val1 + val2;
     Write8BitReg(R, RR, result);
     SetZeroFlag(result);
     SetSubtractionFlag(val2);
     SetHalfCarryFlagBit3To4(val1, val2);
+    if (carry) SetCarryFlag8Bit(result);
 }
 // Flags: Z N H -
 function ADD__RR_(RR, val2) {
@@ -16,6 +17,96 @@ function ADD__RR_(RR, val2) {
     SetZeroFlag(result);
     SetSubtractionFlag(val2);
     SetHalfCarryFlagBit3To4(val1, val2);
+}
+// Flags: Z 0 1 0
+function AND_A_R(R, RR) {
+    let result = Read8BitReg(A, AF) & Read8BitReg(R, RR);
+    Write8BitReg(A, AF, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    SetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 0 1 0
+function AND_A__HL_() {
+    let result = Read8BitReg(A, AF) & ReadAddress(Read16BitReg(HL));
+    Write8BitReg(A, AF, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    SetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 0 0 0
+function OR_A_R(R, RR) {
+    let result = Read8BitReg(A, AF) | Read8BitReg(R, RR);
+    Write8BitReg(A, AF, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 0 0 0
+function OR_A__HL_() {
+    let result = Read8BitReg(A, AF) | ReadAddress(Read16BitReg(HL));
+    Write8BitReg(A, AF, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 0 0 0
+function XOR_A_R(R, RR) {
+    let result = Read8BitReg(A, AF) ^ Read8BitReg(R, RR);
+    Write8BitReg(A, AF, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 0 0 0
+function XOR_A__HL_() {
+    let result = Read8BitReg(A, AF) ^ ReadAddress(Read16BitReg(HL));
+    Write8BitReg(A, AF, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 1 H C
+function CP_A_R(R, RR) {
+    let val1 = Read8BitReg(A, AF);
+    let val2 = -Read8BitReg(R, RR);
+    let result = val1 + val2;
+    SetZeroFlag(result);
+    SetFlag(F_N);
+    SetHalfCarryFlagBit3To4(val1, val2);
+    SetCarryFlag8Bit(result);
+}
+// Flags: Z 1 H C
+function CP_A__HL_() {
+    let val1 = Read8BitReg(A, AF);
+    let val2 = -ReadAddress(Read16BitReg(HL));
+    let result = val1 + val2;
+    SetZeroFlag(result);
+    SetFlag(F_N);
+    SetHalfCarryFlagBit3To4(val1, val2);
+    SetCarryFlag8Bit(result);
+}
+// Flags: Z 0 H C
+function ADC_A_R(R, RR) {
+    ADD_R(A, AF, Read8BitReg(A, AF) + Read8BitReg(R, RR) + ReadFlag(F_C), true);
+}
+// Flags: Z 1 H C
+function SBC_A_R(R, RR) {
+    ADD_R(A, AF, Read8BitReg(A, AF) - Read8BitReg(R, RR) - ReadFlag(F_C), true);
+}
+// Flags: Z 0 H C
+function ADD_A_R(R, RR) {
+    ADD_R(A, AF, Read8BitReg(R, RR), true);
+}
+// Flags: Z 1 H C
+function SUB_A_R(R, RR) {
+    ADD_R(A, AF, -Read8BitReg(R, RR), true);
 }
 // Flags: - - - -
 function LD_RR_nn(RR) {
@@ -372,7 +463,6 @@ function Execute0x37() {
     SetFlag(F_C);
     ResetFlag(F_N);
     ResetFlag(F_H);
-    SetFlag(F_C);
 }
 // JR C, s8
 // Flags:  - - - -
@@ -736,261 +826,325 @@ function Execute0x7E() {
 function Execute0x7F() {
     // Do nothing
 }
-
+// ADD A, B
+// Flags:  Z 0 H C
 function Execute0x80() {
-
+    ADD_R_R(A, AF, B, BC);
 }
-
+// ADD A, C
+// Flags:  Z 0 H C
 function Execute0x81() {
-
+    ADD_A_R(C, BC);
 }
-
+// ADD A, D
+// Flags:  Z 0 H C
 function Execute0x82() {
-
+    ADD_A_R(D, DE);
 }
-
+// ADD A, E
+// Flags:  Z 0 H C
 function Execute0x83() {
-
+    ADD_A_E(E, DE);
 }
-
+// ADD A, H
+// Flags:  Z 0 H C
 function Execute0x84() {
-
+    ADD_A_R(H, HL);
 }
-
+// ADD A, L
+// Flags:  Z 0 H C
 function Execute0x85() {
-
+    ADD_A_R(L, HL);
 }
-
+// ADD A, (HL)
+// Flags:  Z 0 H C
 function Execute0x86() {
-
+    ADD_R(A, AF, ReadAddress(Read16BitReg(HL)), true);
 }
-
+// ADD A, A
+// Flags:  Z 0 H C
 function Execute0x87() {
-
+    ADD_A_R(A, AF);
 }
-
+// ADC A, B
+// Flags:  Z 0 H C
 function Execute0x88() {
-
+    ADC_A_R(B, BC);
 }
-
+// ADC A, C
+// Flags:  Z 0 H C
 function Execute0x89() {
-
+    ADC_A_R(C, BC);
 }
-
+// ADC A, D
+// Flags:  Z 0 H C
 function Execute0x8A() {
-
+    ADC_A_R(D, DE);
 }
-
+// ADC A, E
+// Flags:  Z 0 H C
 function Execute0x8B() {
-
+    ADC_A_R(E, DE);
 }
-
+// ADC A, H
+// Flags:  Z 0 H C
 function Execute0x8C() {
-
+    ADC_A_R(H, HL);
 }
-
+// ADC A, L
+// Flags:  Z 0 H C
 function Execute0x8D() {
-
+    ADC_A_R(L, HL);
 }
-
+// ADC A, (HL)
+// Flags:  Z 0 H C
 function Execute0x8E() {
-
+    ADD_R(A, AF, Read8BitReg(A, AF) + ReadAddress(Read16BitReg(HL)) + ReadFlag(F_C), true);
 }
-
+// ADC A, A
+// Flags:  Z 0 H C
 function Execute0x8F() {
-
+    ADC_A_R(A, AF);
 }
-
+// SUB B
+// Flags:  Z 1 H C
 function Execute0x90() {
-
+    SUB_A_R(B, BC);
 }
-
+// SUB C
+// Flags:  Z 1 H C
 function Execute0x91() {
-
+    SUB_A_R(C, BC);
 }
-
+// SUB D
+// Flags:  Z 1 H C
 function Execute0x92() {
-
+    SUB_A_R(D, DE);
 }
-
+// SUB E
+// Flags:  Z 1 H C
 function Execute0x93() {
-
+    SUB_A_R(E, DE);
 }
-
+// SUB H
+// Flags:  Z 1 H C
 function Execute0x94() {
-
+    SUB_A_R(H, HL);
 }
-
+// SUB L
+// Flags:  Z 1 H C
 function Execute0x95() {
-
+    SUB_A_R(L, HL);
 }
-
+// SUB (HL)
+// Flags:  Z 1 H C
 function Execute0x96() {
-
+    ADD_R(A, AF, -ReadAddress(Read16BitReg(HL)), true);
 }
-
+// SUB A
+// Flags:  Z 1 H C
 function Execute0x97() {
-
+    SUB_A_R(A, AF);
 }
-
+// SBC A, B
+// Flags:  Z 1 H C
 function Execute0x98() {
-
+    SBC_A_R(B, BC);
 }
-
+// SBC A, C
+// Flags:  Z 1 H C
 function Execute0x99() {
-
+    SBC_A_R(C, BC);
 }
-
+// SBC A, D
+// Flags:  Z 1 H C
 function Execute0x9A() {
-
+    SBC_A_R(D, DE);
 }
-
+// SBC A, E
+// Flags:  Z 1 H C
 function Execute0x9B() {
-
+    SBC_A_R(E, DE);
 }
-
+// SBC A, H
+// Flags:  Z 1 H C
 function Execute0x9C() {
-
+    SBC_A_R(H, HL);
 }
-
+// SBC A, L
+// Flags:  Z 1 H C
 function Execute0x9D() {
-
+    SBC_A_R(L, HL);
 }
-
+// SBC A, (HL)
+// Flags:  Z 1 H C
 function Execute0x9E() {
-
+    ADD_R(A, AF, Read8BitReg(A, AF) - ReadAddress(Read16BitReg(HL)) - ReadFlag(F_C), true);
 }
-
+// SBC A, A
+// Flags:  Z 1 H C
 function Execute0x9F() {
-
+    SBC_A_R(A, AF);
 }
-
+// AND B
+// Flags:  Z 0 1 0
 function Execute0xA0() {
-
+    AND_A_R(B, BC);
 }
-
+// AND C
+// Flags:  Z 0 1 0
 function Execute0xA1() {
-
+    AND_A_R(C, BC);
 }
-
+// AND D
+// Flags:  Z 0 1 0
 function Execute0xA2() {
-
+    AND_A_R(D, DE);
 }
-
+// AND E
+// Flags:  Z 0 1 0
 function Execute0xA3() {
-
+    AND_A_R(E, DE);
 }
-
+// AND H
+// Flags:  Z 0 1 0
 function Execute0xA4() {
-
+    AND_A_R(H, HL);
 }
-
+// AND L
+// Flags:  Z 0 1 0
 function Execute0xA5() {
-
+    AND_A_R(L, HL);
 }
-
+// AND (HL)
+// Flags:  Z 0 1 0
 function Execute0xA6() {
-
+    AND_A__HL_();
 }
-
+// AND A
+// Flags:  Z 0 1 0
 function Execute0xA7() {
-
+    AND_A_R(A, AF);
 }
-
+// XOR B
+// Flags:  Z 0 0 0
 function Execute0xA8() {
-
+    XOR_A_R(B, BC);
 }
-
+// XOR C
+// Flags:  Z 0 0 0
 function Execute0xA9() {
-
+    XOR_A_R(C, BC);
 }
-
+// XOR D
+// Flags:  Z 0 0 0
 function Execute0xAA() {
-
+    XOR_A_R(D, DE);
 }
-
+// XOR E
+// Flags:  Z 0 0 0
 function Execute0xAB() {
-
+    XOR_A_R(E, DE);
 }
-
+// XOR H
+// Flags:  Z 0 0 0
 function Execute0xAC() {
-
+    XOR_A_R(H, HL);
 }
-
+// XOR L
+// Flags:  Z 0 0 0
 function Execute0xAD() {
-
+    XOR_A_R(L, HL);
 }
-
+// XOR (HL)
+// Flags:  Z 0 0 0
 function Execute0xAE() {
-
+    XOR_A__HL_();
 }
-
+// XOR A
+// Flags:  Z 0 0 0
 function Execute0xAF() {
-
+    XOR_A_R(A, AF);
 }
-
+// OR B
+// Flags:  Z 0 0 0
 function Execute0xB0() {
-
+    OR_A_R(B, BC);
 }
-
+// OR C
+// Flags:  Z 0 0 0
 function Execute0xB1() {
-
+    OR_A_R(C, BC);
 }
-
+// OR D
+// Flags:  Z 0 0 0
 function Execute0xB2() {
-
+    OR_A_R(D, DE);
 }
-
+// OR E
+// Flags:  Z 0 0 0
 function Execute0xB3() {
-
+    OR_A_R(E, DE);
 }
-
+// OR H
+// Flags:  Z 0 0 0
 function Execute0xB4() {
-
+    OR_A_R(H, HL);
 }
-
+// OR L
+// Flags:  Z 0 0 0
 function Execute0xB5() {
-
+    OR_A_R(L, HL);
 }
-
+// OR (HL)
+// Flags:  Z 0 0 0
 function Execute0xB6() {
-
+    OR_A__HL_();
 }
-
+// OR A
+// Flags:  Z 0 0 0
 function Execute0xB7() {
-
+    OR_A_R(A, AF);
 }
-
+// CP B
+// Flags:  Z 1 H C
 function Execute0xB8() {
-
+    CP_A_R(B, BC);
 }
-
+// CP C
+// Flags:  Z 1 H C
 function Execute0xB9() {
-
+    CP_A_R(C, BC);
 }
-
+// CP D
+// Flags:  Z 1 H C
 function Execute0xBA() {
-
+    CP_A_R(D, DE);
 }
-
+// CP E
+// Flags:  Z 1 H C
 function Execute0xBB() {
-
+    CP_A_R(E, DE);
 }
-
+// CP H
+// Flags:  Z 1 H C
 function Execute0xBC() {
-
+    CP_A_R(H, HL);
 }
-
+// CP L
+// Flags:  Z 1 H C
 function Execute0xBD() {
-
+    CP_A_R(L, HL);
 }
-
+// CP (HL)
+// Flags:  Z 1 H C
 function Execute0xBE() {
-
+    CP_A__HL_();
 }
-
+// CP A
+// Flags:  Z 1 H C
 function Execute0xBF() {
-
+    CP_A_R(A, AF);
 }
 
 function Execute0xC0() {
