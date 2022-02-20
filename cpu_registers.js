@@ -1,15 +1,14 @@
 // Constants
 const RESET_VECTOR = 0x0100; // ROM application starts at 0x0100. Skip the boot rom.
 const STACK_VECTOR = 0xFFFE;
+const BIG_ENDIAN    = false;
 const LITTLE_ENDIAN = true;
 const HIGH = 0;
-const LOW = 1;
+const LOW  = 1;
 
 // Program Counter
 const PCBuffer = new ArrayBuffer(2);
 const PC = new DataView(PCBuffer);
-const P = HIGH;
-const C = LOW;
 Write16BitReg(PC, RESET_VECTOR);
 
 // Stack Pointer
@@ -20,8 +19,7 @@ Write16BitReg(SP, STACK_VECTOR);
 // AF - Accumulator/Flags
 const AFBuffer = new ArrayBuffer(2);
 const AF = new DataView(AFBuffer);
-const F = HIGH;
-const A = LOW;
+Write16BitReg(AF, 0x01B0);
 const F_Z = 7; // bit
 const F_N = 6; // bit
 const F_H = 5; // bit
@@ -30,20 +28,17 @@ const F_C = 4; // bit
 // BC - Gen Storage
 const BCBuffer = new ArrayBuffer(2);
 const BC = new DataView(BCBuffer);
-const C = HIGH;
-const B = LOW;
+Write16BitReg(BC, 0x0013);
 
 // DE - Gen Storage
 const DEBuffer = new ArrayBuffer(2);
 const DE = new DataView(DEBuffer);
-const E = HIGH;
-const D = LOW;
+Write16BitReg(DE, 0x00D8);
 
 // HL - Address Pointer
 const HLBuffer = new ArrayBuffer(2);
 const HL = new DataView(HLBuffer);
-const L = HIGH;
-const H = LOW;
+Write16BitReg(HL, 0x014D);
 
 // Read16BitReg(RR)
 //
@@ -118,8 +113,8 @@ function Write8BitReg(R, RR, val) {
 // e.g. SetFlag(F_N);
 //
 function SetFlag(F) {
-    let jackson_sux = Read8BitReg(F, AF) | (1 << F);
-    Write8BitReg(F, AF, jackson_sux);
+    let jackson_sux = Read8BitReg(LOW, AF) | (1 << F);
+    Write8BitReg(LOW, AF, jackson_sux);
 }
 
 // ResetFlag(F)
@@ -135,8 +130,8 @@ function SetFlag(F) {
 // e.g. ResetFlag(F_N);
 //
 function ResetFlag(F) {
-    let jackson_sux = Read8BitReg(F, AF) & ~(1 << F);
-    Write8BitReg(F, AF, jackson_sux);
+    let jackson_sux = Read8BitReg(LOW, AF) & ~(1 << F);
+    Write8BitReg(LOW, AF, jackson_sux);
 }
 
 // ReadFlag(F)
@@ -152,7 +147,7 @@ function ResetFlag(F) {
 // e.g. ReadFlag(F_N);
 //
 function ReadFlag(F) {
-    return Read8BitReg(F, AF) & (1 << F);
+    return Read8BitReg(LOW, AF) & (1 << F);
 }
 
 // SetZeroFlag(val)
@@ -164,7 +159,7 @@ function ReadFlag(F) {
 // Sets the zero flag if val is zero, otherwise resets it.
 //
 function SetZeroFlag(val) {
-    if (!val) SetFlag(F_Z);
+    if (val == 0) SetFlag(F_Z);
     else ResetFlag(F_Z);
 }
 
@@ -191,8 +186,13 @@ function SetSubtractionFlag(val) {
 // Sets the half carry flag if val1 + val2 carries bit 4, otherwise resets it
 //
 function SetHalfCarryFlagBit3To4(val1, val2) {
-    if ((((val1 & 0xf) + (val2 & 0xf)) & 0x10) == 0x10) SetFlag(F_H);
-    else ResetFlag(F_H);
+    if(val2 >= 0) {
+        if ((((val1 & 0xf) + (val2 & 0xf)) & 0x10)) SetFlag(F_H);
+        else ResetFlag(F_H);
+    } else {
+        if ((((val1 & 0xf) - (-val2 & 0xf)) & 0x10)) SetFlag(F_H);
+        else ResetFlag(F_H);
+    }
 }
 
 // SetHalfCarryFlagBit11To12(val1, val2)
@@ -205,8 +205,13 @@ function SetHalfCarryFlagBit3To4(val1, val2) {
 // Sets the half carry flag if val1 + val2 carries bit 12, otherwise resets it
 //
 function SetHalfCarryFlagBit11To12(val1, val2) {
-    if (((((val1>>8) & 0xf) + ((val2>>8) & 0xf)) & 0x10) == 0x10) SetFlag(F_H);
-    else ResetFlag(F_H);
+    if (val2 >= 0) {
+        if ((((val1 & 0xfff) + (val2 & 0xfff)) & 0x1000)) SetFlag(F_H);
+        else ResetFlag(F_H);
+    } else {
+        if ((((val1 & 0xfff) - (-val2 & 0xfff)) & 0x1000)) SetFlag(F_H);
+        else ResetFlag(F_H);
+    }
 }
 
 // SetCarryFlag8Bit(result)
@@ -218,7 +223,7 @@ function SetHalfCarryFlagBit11To12(val1, val2) {
 // Sets the carry flag if result is > 0xFF, otherwise resets it
 //
 function SetCarryFlag8Bit(result) {
-    if (result > 0xFF) SetFlag(F_C);
+    if (result > 0xFF || result < 0) SetFlag(F_C);
     else ResetFlag(F_C);
 }
 
@@ -231,6 +236,6 @@ function SetCarryFlag8Bit(result) {
 // Sets the carry flag if result is > 0xFFFF, otherwise resets it
 //
 function SetCarryFlag16Bit(result) {
-    if (result > 0xFFFF) SetFlag(F_C);
+    if (result > 0xFFFF || result < 0) SetFlag(F_C);
     else ResetFlag(F_C);
 }

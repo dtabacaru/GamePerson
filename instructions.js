@@ -31,8 +31,8 @@ function ADD_SP_s(RR) {
 }
 // Flags: Z 0 1 0
 function AND(val) {
-    let result = Read8BitReg(A, AF) & val;
-    Write8BitReg(A, AF, result);
+    let result = Read8BitReg(HIGH, AF) & val;
+    Write8BitReg(HIGH, AF, result);
     SetZeroFlag(result);
     ResetFlag(F_N);
     SetFlag(F_H);
@@ -40,8 +40,8 @@ function AND(val) {
 }
 // Flags: Z 0 0 0
 function OR(val) {
-    let result = Read8BitReg(A, AF) | val;
-    Write8BitReg(A, AF, result);
+    let result = Read8BitReg(HIGH, AF) | val;
+    Write8BitReg(HIGH, AF, result);
     SetZeroFlag(result);
     ResetFlag(F_N);
     ResetFlag(F_H);
@@ -49,8 +49,8 @@ function OR(val) {
 }
 // Flags: Z 0 0 0
 function XOR(val) {
-    let result = Read8BitReg(A, AF) ^ val;
-    Write8BitReg(A, AF, result);
+    let result = Read8BitReg(HIGH, AF) ^ val;
+    Write8BitReg(HIGH, AF, result);
     SetZeroFlag(result);
     ResetFlag(F_N);
     ResetFlag(F_H);
@@ -58,7 +58,7 @@ function XOR(val) {
 }
 // Flags: Z 1 H C
 function CP(val) {
-    let val1 = Read8BitReg(A, AF);
+    let val1 = Read8BitReg(HIGH, AF);
     let val2 = -val;
     let result = val1 + val2;
     SetZeroFlag(result);
@@ -68,71 +68,70 @@ function CP(val) {
 }
 // Flags: Z 0 H C
 function ADC(val) {
-    ADD_R(A, AF, Read8BitReg(A, AF) + val + ReadFlag(F_C), true);
+    ADD_R(HIGH, AF, Read8BitReg(HIGH, AF) + val + ReadFlag(F_C), true);
 }
 // Flags: Z 1 H C
 function SBC(val) {
-    ADD_R(A, AF, Read8BitReg(A, AF) - val - ReadFlag(F_C), true);
+    ADD_R(HIGH, AF, Read8BitReg(HIGH, AF) - val - ReadFlag(F_C), true);
 }
 // Flags: Z 0 H C
 function ADD(val) {
-    ADD_R(A, AF, val, true);
+    ADD_R(HIGH, AF, val, true);
 }
 // Flags: Z 1 H C
 function SUB(val) {
-    ADD_R(A, AF, -val, true);
+    ADD_R(HIGH, AF, -val, true);
 }
 // Flags: 0 0 0 A7
 function RLCA() {
-    let result = (Read8BitReg(A, AF) << 1) | (Read8BitReg(A, AF) >> 7);
+    let result = (Read8BitReg(HIGH, AF) << 1) | (Read8BitReg(HIGH, AF) >> 7);
     ResetFlag(F_Z);
     ResetFlag(F_N);
     ResetFlag(F_H);
-    if (Read8BitReg(A, AF) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
-    Write8BitReg(A, AF, result & 0xFF);
+    if (Read8BitReg(HIGH, AF) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
+    Write8BitReg(HIGH, AF, result & 0xFF);
 }
 // Flags: 0 0 0 A7
 function RLA() {
-    let result = (Read8BitReg(A, AF) << 1) | (ReadFlag(F_C) >> 7);
+    let result = (Read8BitReg(HIGH, AF) << 1) | (ReadFlag(F_C) >> 7);
     ResetFlag(F_Z);
     ResetFlag(F_N);
     ResetFlag(F_H);
-    if (Read8BitReg(A, AF) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
-    Write8BitReg(A, AF, result & 0xFF);
+    if (Read8BitReg(HIGH, AF) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
+    Write8BitReg(HIGH, AF, result & 0xFF);
 }
 // Flags: 0 0 0 A0
 function RRCA() {
-    let result = (Read8BitReg(A, AF) >> 1) | (Read8BitReg(A, AF) << 7);
+    let result = (Read8BitReg(HIGH, AF) >> 1) | (Read8BitReg(HIGH, AF) << 7);
     ResetFlag(F_Z);
     ResetFlag(F_N);
     ResetFlag(F_H);
-    if (Read8BitReg(A, AF) & 0b00000001) SetFlag(F_C); else ResetFlag(F_C);
-    Write8BitReg(A, AF, result);
+    if (Read8BitReg(HIGH, AF) & 0b00000001) SetFlag(F_C); else ResetFlag(F_C);
+    Write8BitReg(HIGH, AF, result);
 }
 // Flags: 0 0 0 A0
 function RRA() {
-    let result = (Read8BitReg(A, AF) >> 1) | (ReadFlag(F_C) << 7);
+    let result = (Read8BitReg(HIGH, AF) >> 1) | (ReadFlag(F_C) << 7);
     ResetFlag(F_Z);
     ResetFlag(F_N);
     ResetFlag(F_H);
-    if (Read8BitReg(A, AF) & 0b00000001) SetFlag(F_C); else ResetFlag(F_C);
-    Write8BitReg(A, AF, result);
+    if (Read8BitReg(HIGH, AF) & 0b00000001) SetFlag(F_C); else ResetFlag(F_C);
+    Write8BitReg(HIGH, AF, result);
 }
 // Flags: Z - 0 C
 // https://forums.nesdev.org/viewtopic.php?t=15944#:~:text=The%20DAA%20instruction%20adjusts%20the,%2C%20lower%20nybble%2C%20or%20both.
 function DAA() {
-    let result = Read8BitReg(A, AF);
+    let result = Read8BitReg(HIGH, AF);
     if (!ReadFlag(F_N)) {
-        if (ReadFlag(F_C) ||  result         > 0x99) result += 0x60; 
-        if (ReadFlag(F_H) || (result & 0x0f) > 0x09) result += 0x06; 
+        if (ReadFlag(F_C) ||  result         > 0x99) {result += 0x60; SetFlag(F_C); }
+        if (ReadFlag(F_H) || (result & 0x0f) > 0x09)  result += 0x06; 
     } else {  
         if (ReadFlag(F_C)) result -= 0x60;
         if (ReadFlag(F_H)) result -= 0x06;
     }
-    Write8BitReg(A, AF, result);
+    Write8BitReg(HIGH, AF, result);
     SetZeroFlag(result);
     ResetFlag(F_H);
-    SetCarryFlag8Bit(result);
 }
 // Flags: - - - -
 function LD_RR_nn(RR) {
@@ -152,7 +151,7 @@ function LD_R__HL_(R, RR) {
 }
 // Flags: - - - -
 function LD__RR__A(RR) {
-    WriteAddress(Get16BitRegVal(RR), Read8BitReg(A,AF));
+    WriteAddress(Get16BitRegVal(RR), Read8BitReg(HIGH,AF));
 }
 // Flags: - - - -
 function LD__nn__SP() {
@@ -160,7 +159,7 @@ function LD__nn__SP() {
 }
 // Flags: - - - -
 function LD_A__RR_(RR) {
-    Write8BitReg(A, AF, ReadAddress(Read16BitReg(RR)));
+    Write8BitReg(HIGH, AF, ReadAddress(Read16BitReg(RR)));
 }
 // Flags: - - - -
 function LD__HL__n() {
@@ -169,6 +168,22 @@ function LD__HL__n() {
 // Flags: - - - -
 function LD__HL__R(R, RR) {
     WriteAddress(Read16BitReg(HL), Read8BitReg(R, RR));
+}
+// Flags: - - - -
+function SET_R_b(R, RR, b) {
+    Write8BitReg(R, RR, Read8BitReg(R, RR) | (1 << b));
+}
+// Flags: - - - -
+function RES_R_b(R, RR, b) {
+    Write8BitReg(R, RR, Read8BitReg(R, RR) & ~(1 << b));
+}
+// Flags: - - - -
+function SET__HL__b(b) {
+    WriteAddress(Read16BitReg(HL), ReadAddress(Read16BitReg(HL)) | (1 << b));
+}
+// Flags: - - - -
+function RES__HL__b(b) {
+    WriteAddress(Read16BitReg(HL), ReadAddress(Read16BitReg(HL)) & ~(1 << b));
 }
 // Flags: - - - -
 function INC_RR(RR) {
@@ -210,9 +225,9 @@ function JP(addr) {
 }
 // Flags: - - - -
 function CALL(addr) {
-    Write16BitReg(Read16BitReg(SP) - 2);
-    WriteAddress(Read16BitReg(SP),     Read8BitReg(P, PC));
-    WriteAddress(Read16BitReg(SP + 1), Read8BitReg(C, PC));
+    Write16BitReg(SP, Read16BitReg(SP) - 2);
+    WriteAddress(Read16BitReg(SP),     Read8BitReg(HIGH, PC));
+    WriteAddress(Read16BitReg(SP) + 1, Read8BitReg(LOW, PC));
     Write16BitReg(PC, addr);
 }
 // Flags: - - - -
@@ -220,11 +235,11 @@ function RET() {
     let high = ReadAddress(Read16BitReg(SP));
     let low = ReadAddress(Read16BitReg(SP + 1));
     Write16BitReg(PC, (high << 8) + low);
-    Write16BitReg(Read16BitReg(SP) + 2);
+    Write16BitReg(SP, Read16BitReg(SP) + 2);
 }
 // Flags: - - - -
 function PUSH_RR(RR) {
-    Write16BitReg(Read16BitReg(SP) - 2);
+    Write16BitReg(SP, Read16BitReg(SP) - 2);
     WriteAddress(Read16BitReg(SP), Read8BitReg(HIGH, RR));
     WriteAddress(Read16BitReg(SP), Read8BitReg(LOW,  RR));
 }
@@ -232,10 +247,10 @@ function PUSH_RR(RR) {
 function POP_RR(RR) {
     Write8BitReg(HIGH, RR, ReadAddress(Read16BitReg(SP)));
     Write8BitReg(LOW,  RR, ReadAddress(Read16BitReg(SP + 1)));
-    Write16BitReg(Read16BitReg(SP) + 2);
+    Write16BitReg(SP, Read16BitReg(SP) + 2);
 }
 
-// Opcodes
+// 8-bit Opcodes
 // NOP
 // Flags: - - - -
 function Execute0x00() {
@@ -259,17 +274,17 @@ function Execute0x03() {
 // INC B
 // Flags: Z 0 H -
 function Execute0x04() {
-    INC_R(B, BC);
+    INC_R(HIGH, BC);
 }
 // DEC B
 // Flags: Z 1 H -
 function Execute0x05() {
-    DEC_R(B, BC);
+    DEC_R(HIGH, BC);
 }
 // LD B, d8
 // Flags: - - - -
 function Execute0x06() {
-    LD_R_n(B, BC);
+    LD_R_n(HIGH, BC);
 }
 // RLCA
 // Flags: 0 0 0 A7
@@ -299,17 +314,17 @@ function Execute0x0B() {
 // INC C
 // Flags: Z 0 H -
 function Execute0x0C() {
-    INC_R(C, BC);
+    INC_R(LOW, BC);
 }
 // DEC C
 // Flags: Z 1 H -
 function Execute0x0D() {
-    DEC_R(C, BC);
+    DEC_R(LOW, BC);
 }
 // LD C, d8
 // Flags: - - - -
 function Execute0x0E() {
-    LD_R_n(C, BC);
+    LD_R_n(LOW, BC);
 }
 // RRCA
 // Flags: 0 0 0 A0
@@ -339,17 +354,17 @@ function Execute0x13() {
 // INC D
 // Flags: Z 0 H -
 function Execute0x14() {
-    INC_R(D, DE);
+    INC_R(HIGH, DE);
 }
 // DEC D
 // Flags: Z 1 H -
 function Execute0x15() {
-    DEC_R(D, DE);
+    DEC_R(HIGH, DE);
 }
 // LD D, d8
 // Flags: - - - -
 function Execute0x16() {
-    LD_R_n(D, DE);
+    LD_R_n(HIGH, DE);
 }
 // RLA
 // Flags: 0 0 0 A7
@@ -379,17 +394,17 @@ function Execute0x1B() {
 // INC E
 // Flags: Z 0 H -
 function Execute0x1C() {
-    INC_R(E, DE);
+    INC_R(LOW, DE);
 }
 // DEC E
 // Flags: Z 1 H -
 function Execute0x1D() {
-    DEC_R(E, DE);
+    DEC_R(LOW, DE);
 }
 // LD E, d8
 // Flags:  - - - - 
 function Execute0x1E() {
-    LD_R_n(E, DE);
+    LD_R_n(LOW, DE);
 }
 // RRA
 // Flags: 0 0 0 A0
@@ -421,17 +436,17 @@ function Execute0x23() {
 // INC H
 // Flags:  Z 0 H -
 function Execute0x24() {
-    INC_R(H, HL);
+    INC_R(HIGH, HL);
 }
 // DEC H
 // Flags:  Z 1 H -
 function Execute0x25() {
-    DEC_R(H, HL);
+    DEC_R(HIGH, HL);
 }
 // LD H, d8
 // Flags:  - - - - 
 function Execute0x26() {
-    LD_R_n(H, HL);
+    LD_R_n(HIGH, HL);
 }
 // DAA
 // Flags:  Z - 0 C
@@ -463,22 +478,22 @@ function Execute0x2B() {
 // INC L
 // Flags:  Z 0 H -
 function Execute0x2C() {
-    INC_R(L, HL);
+    INC_R(LOW, HL);
 }
 // DEC L
 // Flags:  Z 1 H -
 function Execute0x2D() {
-    DEC_R(L, HL);
+    DEC_R(LOW, HL);
 }
 // LD L, d8
 // Flags:  - - - - 
 function Execute0x2E() {
-    LD_R_n(L, HL);
+    LD_R_n(LOW, HL);
 }
 // CPL
 // Flags:  - 1 1 -
 function Execute0x2F() {
-    Write8BitReg(~Read8BitReg(A, AF));
+    Write8BitReg(~Read8BitReg(HIGH, AF));
     SetFlag(F_N);
     SetFlag(F_H);
 }
@@ -551,17 +566,17 @@ function Execute0x3B() {
 // INC A
 // Flags:  Z 0 H -
 function Execute0x3C() {
-    INC_R(A, AF);
+    INC_R(HIGH, AF);
 }
 // DEC A
 // Flags:  Z 1 H -
 function Execute0x3D() {
-    DEC_R(A, AF);
+    DEC_R(HIGH, AF);
 }
 // LD A, d8
 // Flags:  - - - -
 function Execute0x3E() {
-    LD_R_n(A, AF);
+    LD_R_n(HIGH, AF);
 }
 // CCF
 // Flags:  - 0 0 !C
@@ -576,42 +591,42 @@ function Execute0x40() {
 // LD B, C
 // Flags:  - - - -
 function Execute0x41() {
-    LD_R_R(B, BC, C, BC);
+    LD_R_R(HIGH, BC, LOW, BC);
 }
 // LD B, D
 // Flags:  - - - -
 function Execute0x42() {
-    LD_R_R(B, BC, D, DE);
+    LD_R_R(HIGH, BC, HIGH, DE);
 }
 // LD B, E
 // Flags:  - - - -
 function Execute0x43() {
-    LD_R_R(B, BC, E, DE);
+    LD_R_R(HIGH, BC, LOW, DE);
 }
 // LD B, H
 // Flags:  - - - -
 function Execute0x44() {
-    LD_R_R(B, BC, H, HL);
+    LD_R_R(HIGH, BC, HIGH, HL);
 }
 // LD B, L
 // Flags:  - - - -
 function Execute0x45() {
-    LD_R_R(B, BC, L, HL);
+    LD_R_R(HIGH, BC, LOW, HL);
 }
 // LD B, (HL)
 // Flags:  - - - -
 function Execute0x46() {
-    LD_R__HL_(B, BC);
+    LD_R__HL_(HIGH, BC);
 }
 // LD B, A
 // Flags:  - - - -
 function Execute0x47() {
-    LD_R_R(B, BC, A, AF);
+    LD_R_R(HIGH, BC, HIGH, AF);
 }
 // LD C, B
 // Flags:  - - - -
 function Execute0x48() {
-    LD_R_R(C, BC, B, BC);
+    LD_R_R(LOW, BC, HIGH, BC);
 }
 // LD C, C
 // Flags:  - - - -
@@ -621,42 +636,42 @@ function Execute0x49() {
 // LD C, D
 // Flags:  - - - -
 function Execute0x4A() {
-    LD_R_R(C, BC, D, DE);
+    LD_R_R(LOW, BC, HIGH, DE);
 }
 // LD C, E
 // Flags:  - - - -
 function Execute0x4B() {
-    LD_R_R(C, BC, E, DE);
+    LD_R_R(LOW, BC, LOW, DE);
 }
 // LD C, H
 // Flags:  - - - -
 function Execute0x4C() {
-    LD_R_R(C, BC, H, HL);
+    LD_R_R(LOW, BC, HIGH, HL);
 }
 // LD C, L
 // Flags:  - - - -
 function Execute0x4D() {
-    LD_R_R(C, BC, L, HL);
+    LD_R_R(LOW, BC, LOW, HL);
 }
 // LD C, (HL)
 // Flags:  - - - -
 function Execute0x4E() {
-    LD_R__HL_(C, BC);
+    LD_R__HL_(LOW, BC);
 }
 // LD C, A
 // Flags:  - - - -
 function Execute0x4F() {
-    LD_R_R(C, BC, A, AF);
+    LD_R_R(LOW, BC, HIGH, AF);
 }
 // LD D, B
 // Flags:  - - - -
 function Execute0x50() {
-    LD_R_R(D, DE, B, BC);
+    LD_R_R(HIGH, DE, HIGH, BC);
 }
 // LD D, C
 // Flags:  - - - -
 function Execute0x51() {
-    LD_R_R(D, DE, C, BC);
+    LD_R_R(HIGH, DE, LOW, BC);
 }
 // LD D, D
 // Flags:  - - - -
@@ -666,42 +681,42 @@ function Execute0x52() {
 // LD D, E
 // Flags:  - - - -
 function Execute0x53() {
-    LD_R_R(D, DE, E, DE);
+    LD_R_R(HIGH, DE, LOW, DE);
 }
 // LD D, H
 // Flags:  - - - -
 function Execute0x54() {
-    LD_R_R(D, DE, H, HL);
+    LD_R_R(HIGH, DE, HIGH, HL);
 }
 // LD D, L
 // Flags:  - - - -
 function Execute0x55() {
-    LD_R_R(D, DE, L, HL);
+    LD_R_R(HIGH, DE, LOW, HL);
 }
 // LD D, (HL)
 // Flags:  - - - -
 function Execute0x56() {
-    LD_R__HL_(D, DE);
+    LD_R__HL_(HIGH, DE);
 }
 // LD D, A
 // Flags:  - - - -
 function Execute0x57() {
-    LD_R_R(D, DE, A, AF);
+    LD_R_R(HIGH, DE, HIGH, AF);
 }
 // LD E, B
 // Flags:  - - - -
 function Execute0x58() {
-    LD_R_R(E, DE, B, BC);
+    LD_R_R(LOW, DE, HIGH, BC);
 }
 // LD E, C
 // Flags:  - - - -
 function Execute0x59() {
-    LD_R_R(E, DE, C, BC);
+    LD_R_R(LOW, DE, LOW, BC);
 }
 // LD E, D
 // Flags:  - - - -
 function Execute0x5A() {
-    LD_R_R(E, DE, D, DE);
+    LD_R_R(LOW, DE, HIGH, DE);
 }
 // LD E, E
 // Flags:  - - - -
@@ -711,42 +726,42 @@ function Execute0x5B() {
 // LD E, H
 // Flags:  - - - -
 function Execute0x5C() {
-    LD_R_R(E, DE, H, HL);
+    LD_R_R(LOW, DE, HIGH, HL);
 }
 // LD E, L
 // Flags:  - - - -
 function Execute0x5D() {
-    LD_R_R(E, DE, L, HL);
+    LD_R_R(LOW, DE, LOW, HL);
 }
 // LD E, (HL)
 // Flags:  - - - -
 function Execute0x5E() {
-    LD_R__HL_(E, DE);
+    LD_R__HL_(LOW, DE);
 }
 // LD E, A
 // Flags:  - - - -
 function Execute0x5F() {
-    LD_R_R(E, DE, A, AF);
+    LD_R_R(LOW, DE, HIGH, AF);
 }
 // LD H, B
 // Flags:  - - - -
 function Execute0x60() {
-    LD_R_R(H, HL, B, BC);
+    LD_R_R(HIGH, HL, HIGH, BC);
 }
 // LD H, C
 // Flags:  - - - -
 function Execute0x61() {
-    LD_R_R(H, HL, C, BC);
+    LD_R_R(HIGH, HL, LOW, BC);
 }
 // LD H, D
 // Flags:  - - - -
 function Execute0x62() {
-    LD_R_R(H, HL, D, DE);
+    LD_R_R(HIGH, HL, HIGH, DE);
 }
 // LD H, E
 // Flags:  - - - -
 function Execute0x63() {
-    LD_R_R(H, HL, E, DE);
+    LD_R_R(HIGH, HL, LOW, DE);
 }
 // LD H, H
 // Flags:  - - - -
@@ -756,42 +771,42 @@ function Execute0x64() {
 // LD H, L
 // Flags:  - - - -
 function Execute0x65() {
-    LD_R_R(H, HL, L, HL);
+    LD_R_R(HIGH, HL, LOW, HL);
 }
 // LD H, (HL)
 // Flags:  - - - -
 function Execute0x66() {
-    LD_R__HL_(H, HL);
+    LD_R__HL_(HIGH, HL);
 }
 // LD H, A
 // Flags:  - - - -
 function Execute0x67() {
-    LD_R_R(H, HL, A, AF);
+    LD_R_R(HIGH, HL, HIGH, AF);
 }
 // LD L, B
 // Flags:  - - - -
 function Execute0x68() {
-    LD_R_R(L, HL, B, BC);
+    LD_R_R(LOW, HL, HIGH, BC);
 }
 // LD L, C
 // Flags:  - - - -
 function Execute0x69() {
-    LD_R_R(L, HL, C, BC);
+    LD_R_R(LOW, HL, LOW, BC);
 }
 // LD L, D
 // Flags:  - - - -
 function Execute0x6A() {
-    LD_R_R(L, HL, D, DE);
+    LD_R_R(LOW, HL, HIGH, DE);
 }
 // LD L, E
 // Flags:  - - - -
 function Execute0x6B() {
-    LD_R_R(L, HL, E, DE);
+    LD_R_R(LOW, HL, LOW, DE);
 }
 // LD L, H
 // Flags:  - - - -
 function Execute0x6C() {
-    LD_R_R(L, HL, H, HL);
+    LD_R_R(LOW, HL, HIGH, HL);
 }
 // LD L, L
 // Flags:  - - - -
@@ -801,42 +816,42 @@ function Execute0x6D() {
 // LD L, (HL)
 // Flags:  - - - -
 function Execute0x6E() {
-    LD_R__HL_(L, HL);
+    LD_R__HL_(LOW, HL);
 }
 // LD L, A
 // Flags:  - - - -
 function Execute0x6F() {
-    LD_R_R(L, HL, A, AF);
+    LD_R_R(LOW, HL, HIGH, AF);
 }
 // LD (HL), B
 // Flags:  - - - -
 function Execute0x70() {
-    LD__HL__R(B, BC);
+    LD__HL__R(HIGH, BC);
 }
 // LD (HL), C
 // Flags:  - - - -
 function Execute0x71() {
-    LD__HL__R(C, BC);
+    LD__HL__R(LOW, BC);
 }
 // LD (HL), D
 // Flags:  - - - -
 function Execute0x72() {
-    LD__HL__R(D, DE);
+    LD__HL__R(HIGH, DE);
 }
 // LD (HL), E
 // Flags:  - - - -
 function Execute0x73() {
-    LD__HL__R(E, DE);
+    LD__HL__R(LOW, DE);
 }
 // LD (HL), H
 // Flags:  - - - -
 function Execute0x74() {
-    LD__HL__R(H, HL);
+    LD__HL__R(HIGH, HL);
 }
 // LD (HL), L
 // Flags:  - - - -
 function Execute0x75() {
-    LD__HL__R(L, HL);
+    LD__HL__R(LOW, HL);
 }
 // HALT
 // Flags:  - - - -
@@ -846,42 +861,42 @@ function Execute0x76() {
 // LD (HL), A
 // Flags:  - - - -
 function Execute0x77() {
-    LD__HL__R(A, AF);
+    LD__HL__R(HIGH, AF);
 }
 // LD A, B
 // Flags:  - - - -
 function Execute0x78() {
-    LD_R_R(A, AF, B, BC);
+    LD_R_R(HIGH, AF, HIGH, BC);
 }
 // LD A, C
 // Flags:  - - - -
 function Execute0x79() {
-    LD_R_R(A, AF, C, BC);
+    LD_R_R(HIGH, AF, LOW, BC);
 }
 // LD A, D
 // Flags:  - - - -
 function Execute0x7A() {
-    LD_R_R(A, AF, D, DE);
+    LD_R_R(HIGH, AF, HIGH, DE);
 }
 // LD A, E
 // Flags:  - - - -
 function Execute0x7B() {
-    LD_R_R(A, AF, E, DE);
+    LD_R_R(HIGH, AF, LOW, DE);
 }
 // LD A, H
 // Flags:  - - - -
 function Execute0x7C() {
-    LD_R_R(A, AF, H, HL);
+    LD_R_R(HIGH, AF, HIGH, HL);
 }
 // LD A, L
 // Flags:  - - - -
 function Execute0x7D() {
-    LD_R_R(A, AF, L, HL);
+    LD_R_R(HIGH, AF, LOW, HL);
 }
 // LD A, (HL)
 // Flags:  - - - -
 function Execute0x7E() {
-    LD_R__HL_(A, AF);
+    LD_R__HL_(HIGH, AF);
 }
 // LD A, A
 // Flags:  - - - -
@@ -891,32 +906,32 @@ function Execute0x7F() {
 // ADD A, B
 // Flags:  Z 0 H C
 function Execute0x80() {
-    ADD(Read8BitReg(B, BC));
+    ADD(Read8BitReg(HIGH, BC));
 }
 // ADD A, C
 // Flags:  Z 0 H C
 function Execute0x81() {
-    ADD(Read8BitReg(C, BC));
+    ADD(Read8BitReg(LOW, BC));
 }
 // ADD A, D
 // Flags:  Z 0 H C
 function Execute0x82() {
-    ADD(Read8BitReg(D, DE));
+    ADD(Read8BitReg(HIGH, DE));
 }
 // ADD A, E
 // Flags:  Z 0 H C
 function Execute0x83() {
-    ADD(Read8BitReg(E, DE));
+    ADD(Read8BitReg(LOW, DE));
 }
 // ADD A, H
 // Flags:  Z 0 H C
 function Execute0x84() {
-    ADD(Read8BitReg(H, HL));
+    ADD(Read8BitReg(HIGH, HL));
 }
 // ADD A, L
 // Flags:  Z 0 H C
 function Execute0x85() {
-    ADD(Read8BitReg(L, HL));
+    ADD(Read8BitReg(LOW, HL));
 }
 // ADD A, (HL)
 // Flags:  Z 0 H C
@@ -926,37 +941,37 @@ function Execute0x86() {
 // ADD A, A
 // Flags:  Z 0 H C
 function Execute0x87() {
-    ADD(Read8BitReg(A, AF));
+    ADD(Read8BitReg(HIGH, AF));
 }
 // ADC A, B
 // Flags:  Z 0 H C
 function Execute0x88() {
-    ADC(Read8BitReg(B, BC));
+    ADC(Read8BitReg(HIGH, BC));
 }
 // ADC A, C
 // Flags:  Z 0 H C
 function Execute0x89() {
-    ADC(Read8BitReg(C, BC));
+    ADC(Read8BitReg(LOW, BC));
 }
 // ADC A, D
 // Flags:  Z 0 H C
 function Execute0x8A() {
-    ADC(Read8BitReg(D, DE));
+    ADC(Read8BitReg(HIGH, DE));
 }
 // ADC A, E
 // Flags:  Z 0 H C
 function Execute0x8B() {
-    ADC(Read8BitReg(E, DE));
+    ADC(Read8BitReg(LOW, DE));
 }
 // ADC A, H
 // Flags:  Z 0 H C
 function Execute0x8C() {
-    ADC(Read8BitReg(H, HL));
+    ADC(Read8BitReg(HIGH, HL));
 }
 // ADC A, L
 // Flags:  Z 0 H C
 function Execute0x8D() {
-    ADC(Read8BitReg(L, HL));
+    ADC(Read8BitReg(LOW, HL));
 }
 // ADC A, (HL)
 // Flags:  Z 0 H C
@@ -966,37 +981,37 @@ function Execute0x8E() {
 // ADC A, A
 // Flags:  Z 0 H C
 function Execute0x8F() {
-    ADC(Read8BitReg(A, AF));
+    ADC(Read8BitReg(HIGH, AF));
 }
 // SUB B
 // Flags:  Z 1 H C
 function Execute0x90() {
-    SUB(Read8BitReg(B, BC));
+    SUB(Read8BitReg(HIGH, BC));
 }
 // SUB C
 // Flags:  Z 1 H C
 function Execute0x91() {
-    SUB(Read8BitReg(C, BC));
+    SUB(Read8BitReg(LOW, BC));
 }
 // SUB D
 // Flags:  Z 1 H C
 function Execute0x92() {
-    SUB(Read8BitReg(D, DE));
+    SUB(Read8BitReg(HIGH, DE));
 }
 // SUB E
 // Flags:  Z 1 H C
 function Execute0x93() {
-    SUB(Read8BitReg(E, DE));
+    SUB(Read8BitReg(LOW, DE));
 }
 // SUB H
 // Flags:  Z 1 H C
 function Execute0x94() {
-    SUB(Read8BitReg(H, HL));
+    SUB(Read8BitReg(HIGH, HL));
 }
 // SUB L
 // Flags:  Z 1 H C
 function Execute0x95() {
-    SUB(Read8BitReg(L, HL));
+    SUB(Read8BitReg(LOW, HL));
 }
 // SUB (HL)
 // Flags:  Z 1 H C
@@ -1006,37 +1021,37 @@ function Execute0x96() {
 // SUB A
 // Flags:  Z 1 H C
 function Execute0x97() {
-    SUB(Read8BitReg(A, AF));
+    SUB(Read8BitReg(HIGH, AF));
 }
 // SBC A, B
 // Flags:  Z 1 H C
 function Execute0x98() {
-    SBC(Read8BitReg(B, BC));
+    SBC(Read8BitReg(HIGH, BC));
 }
 // SBC A, C
 // Flags:  Z 1 H C
 function Execute0x99() {
-    SBC(Read8BitReg(C, BC));
+    SBC(Read8BitReg(LOW, BC));
 }
 // SBC A, D
 // Flags:  Z 1 H C
 function Execute0x9A() {
-    SBC(Read8BitReg(D, DE));
+    SBC(Read8BitReg(HIGH, DE));
 }
 // SBC A, E
 // Flags:  Z 1 H C
 function Execute0x9B() {
-    SBC(Read8BitReg(E, DE));
+    SBC(Read8BitReg(LOW, DE));
 }
 // SBC A, H
 // Flags:  Z 1 H C
 function Execute0x9C() {
-    SBC(Read8BitReg(H, HL));
+    SBC(Read8BitReg(HIGH, HL));
 }
 // SBC A, L
 // Flags:  Z 1 H C
 function Execute0x9D() {
-    SBC(Read8BitReg(L, HL));
+    SBC(Read8BitReg(LOW, HL));
 }
 // SBC A, (HL)
 // Flags:  Z 1 H C
@@ -1046,37 +1061,37 @@ function Execute0x9E() {
 // SBC A, A
 // Flags:  Z 1 H C
 function Execute0x9F() {
-    SBC(Read8BitReg(A, AF));
+    SBC(Read8BitReg(HIGH, AF));
 }
 // AND B
 // Flags:  Z 0 1 0
 function Execute0xA0() {
-    AND(Read8BitReg(B, BC));
+    AND(Read8BitReg(HIGH, BC));
 }
 // AND C
 // Flags:  Z 0 1 0
 function Execute0xA1() {
-    AND(Read8BitReg(C, BC));
+    AND(Read8BitReg(LOW, BC));
 }
 // AND D
 // Flags:  Z 0 1 0
 function Execute0xA2() {
-    AND(Read8BitReg(D, DE));
+    AND(Read8BitReg(HIGH, DE));
 }
 // AND E
 // Flags:  Z 0 1 0
 function Execute0xA3() {
-    AND(Read8BitReg(E, DE));
+    AND(Read8BitReg(LOW, DE));
 }
 // AND H
 // Flags:  Z 0 1 0
 function Execute0xA4() {
-    AND(Read8BitReg(H, HL));
+    AND(Read8BitReg(HIGH, HL));
 }
 // AND L
 // Flags:  Z 0 1 0
 function Execute0xA5() {
-    AND(Read8BitReg(L, HL));
+    AND(Read8BitReg(LOW, HL));
 }
 // AND (HL)
 // Flags:  Z 0 1 0
@@ -1086,37 +1101,37 @@ function Execute0xA6() {
 // AND A
 // Flags:  Z 0 1 0
 function Execute0xA7() {
-    AND(Read8BitReg(A, AF));
+    AND(Read8BitReg(HIGH, AF));
 }
 // XOR B
 // Flags:  Z 0 0 0
 function Execute0xA8() {
-    XOR(Read8BitReg(B, BC));
+    XOR(Read8BitReg(HIGH, BC));
 }
 // XOR C
 // Flags:  Z 0 0 0
 function Execute0xA9() {
-    XOR(Read8BitReg(C, BC));
+    XOR(Read8BitReg(LOW, BC));
 }
 // XOR D
 // Flags:  Z 0 0 0
 function Execute0xAA() {
-    XOR(Read8BitReg(D, DE));
+    XOR(Read8BitReg(HIGH, DE));
 }
 // XOR E
 // Flags:  Z 0 0 0
 function Execute0xAB() {
-    XOR(Read8BitReg(E, DE));
+    XOR(Read8BitReg(LOW, DE));
 }
 // XOR H
 // Flags:  Z 0 0 0
 function Execute0xAC() {
-    XOR(Read8BitReg(H, HL));
+    XOR(Read8BitReg(HIGH, HL));
 }
 // XOR L
 // Flags:  Z 0 0 0
 function Execute0xAD() {
-    XOR(Read8BitReg(L, HL));
+    XOR(Read8BitReg(LOW, HL));
 }
 // XOR (HL)
 // Flags:  Z 0 0 0
@@ -1126,37 +1141,37 @@ function Execute0xAE() {
 // XOR A
 // Flags:  Z 0 0 0
 function Execute0xAF() {
-    XOR(Read8BitReg(A, AF));
+    XOR(Read8BitReg(HIGH, AF));
 }
 // OR B
 // Flags:  Z 0 0 0
 function Execute0xB0() {
-    OR(Read8BitReg(B, BC));
+    OR(Read8BitReg(HIGH, BC));
 }
 // OR C
 // Flags:  Z 0 0 0
 function Execute0xB1() {
-    OR(Read8BitReg(C, BC));
+    OR(Read8BitReg(LOW, BC));
 }
 // OR D
 // Flags:  Z 0 0 0
 function Execute0xB2() {
-    OR(Read8BitReg(D, DE));
+    OR(Read8BitReg(HIGH, DE));
 }
 // OR E
 // Flags:  Z 0 0 0
 function Execute0xB3() {
-    OR(Read8BitReg(E, DE));
+    OR(Read8BitReg(LOW, DE));
 }
 // OR H
 // Flags:  Z 0 0 0
 function Execute0xB4() {
-    OR(Read8BitReg(H, HL));
+    OR(Read8BitReg(HIGH, HL));
 }
 // OR L
 // Flags:  Z 0 0 0
 function Execute0xB5() {
-    OR(Read8BitReg(L, HL));
+    OR(Read8BitReg(LOW, HL));
 }
 // OR (HL)
 // Flags:  Z 0 0 0
@@ -1166,37 +1181,37 @@ function Execute0xB6() {
 // OR A
 // Flags:  Z 0 0 0
 function Execute0xB7() {
-    OR(Read8BitReg(A, AF));
+    OR(Read8BitReg(HIGH, AF));
 }
 // CP B
 // Flags:  Z 1 H C
 function Execute0xB8() {
-    CP(Read8BitReg(B, BC));
+    CP(Read8BitReg(HIGH, BC));
 }
 // CP C
 // Flags:  Z 1 H C
 function Execute0xB9() {
-    CP(Read8BitReg(C, BC));
+    CP(Read8BitReg(LOW, BC));
 }
 // CP D
 // Flags:  Z 1 H C
 function Execute0xBA() {
-    CP(Read8BitReg(D, DE));
+    CP(Read8BitReg(HIGH, DE));
 }
 // CP E
 // Flags:  Z 1 H C
 function Execute0xBB() {
-    CP(Read8BitReg(E, DE));
+    CP(Read8BitReg(LOW, DE));
 }
 // CP H
 // Flags:  Z 1 H C
 function Execute0xBC() {
-    CP(Read8BitReg(H, HL));
+    CP(Read8BitReg(HIGH, HL));
 }
 // CP L
 // Flags:  Z 1 H C
 function Execute0xBD() {
-    CP(Read8BitReg(L, HL));
+    CP(Read8BitReg(LOW, HL));
 }
 // CP (HL)
 // Flags:  Z 1 H C
@@ -1206,7 +1221,7 @@ function Execute0xBE() {
 // CP A
 // Flags:  Z 1 H C
 function Execute0xBF() {
-    CP(Read8BitReg(A, AF));
+    CP(Read8BitReg(HIGH, AF));
 }
 // RET NZ
 // Flags: - - - -
@@ -1374,7 +1389,7 @@ function Execute0xDF() {
 // LD (a8), A
 // Flags: - - - -
 function Execute0xE0() {
-    WriteAddress(0xFF00 + ReadAndIncrementPC8Bit(), Read8BitReg(A, AF));
+    WriteAddress(0xFF00 + ReadAndIncrementPC8Bit(), Read8BitReg(HIGH, AF));
 }
 // POP HL
 // Flags: - - - -
@@ -1384,7 +1399,7 @@ function Execute0xE1() {
 // LD (C), A
 // Flags: - - - -
 function Execute0xE2() {
-    WriteAddress(0xFF00 + Read8BitReg(C, BC), Read8BitReg(A, AF));
+    WriteAddress(0xFF00 + Read8BitReg(LOW, BC), Read8BitReg(HIGH, AF));
 }
 //
 // Flags: - - - -
@@ -1424,7 +1439,7 @@ function Execute0xE9() {
 // LD (a16), A
 // Flags: - - - -
 function Execute0xEA() {
-    WriteAddress(ReadAndIncrementPC16Bit(), A);
+    WriteAddress(ReadAndIncrementPC16Bit(), HIGH);
 }
 //
 // Flags: - - - -
@@ -1454,7 +1469,7 @@ function Execute0xEF() {
 // LD A, (a8)
 // Flags: - - - -
 function Execute0xF0() {
-    Write8BitReg(A, AF, 0xFF00 + ReadAndIncrementPC8Bit());
+    Write8BitReg(HIGH, AF, 0xFF00 + ReadAndIncrementPC8Bit());
 }
 // POP AF
 // Flags: - - - -
@@ -1464,7 +1479,7 @@ function Execute0xF1() {
 // LD A, (C)
 // Flags: - - - -
 function Execute0xF2() {
-    WriteAddress(0xFF00 + Read8BitReg(C, BC), Read8BitReg(A, AF));
+    WriteAddress(0xFF00 + Read8BitReg(LOW, BC), Read8BitReg(HIGH, AF));
 }
 // DI
 // Flags: - - - -
@@ -1504,7 +1519,7 @@ function Execute0xF9() {
 // LD A, (a16)
 // Flags: - - - -
 function Execute0xFA() {
-    Write8BitReg(A, AF, ReadAddress(ReadAndIncrementPC16Bit()));
+    Write8BitReg(HIGH, AF, ReadAddress(ReadAndIncrementPC16Bit()));
 }
 // EI
 // Flags: - - - -
@@ -1530,4 +1545,1157 @@ function Execute0xFE() {
 // Flags: - - - -
 function Execute0xFF() {
     CALL(0x0038);
+}
+
+// 16-bit Opcodes
+function ExecuteCb0x00() {
+
+}
+
+function ExecuteCb0x01() {
+
+}
+
+function ExecuteCb0x02() {
+
+}
+
+function ExecuteCb0x03() {
+
+}
+
+function ExecuteCb0x04() {
+
+}
+
+function ExecuteCb0x05() {
+
+}
+
+function ExecuteCb0x06() {
+
+}
+
+function ExecuteCb0x07() {
+
+}
+
+function ExecuteCb0x08() {
+
+}
+
+function ExecuteCb0x09() {
+
+}
+
+function ExecuteCb0x0A() {
+
+}
+
+function ExecuteCb0x0B() {
+
+}
+
+function ExecuteCb0x0C() {
+
+}
+
+function ExecuteCb0x0D() {
+
+}
+
+function ExecuteCb0x0E() {
+
+}
+
+function ExecuteCb0x0F() {
+
+}
+
+function ExecuteCb0x10() {
+
+}
+
+function ExecuteCb0x11() {
+
+}
+
+function ExecuteCb0x12() {
+
+}
+
+function ExecuteCb0x13() {
+
+}
+
+function ExecuteCb0x14() {
+
+}
+
+function ExecuteCb0x15() {
+
+}
+
+function ExecuteCb0x16() {
+
+}
+
+function ExecuteCb0x17() {
+
+}
+
+function ExecuteCb0x18() {
+
+}
+
+function ExecuteCb0x19() {
+
+}
+
+function ExecuteCb0x1A() {
+
+}
+
+function ExecuteCb0x1B() {
+
+}
+
+function ExecuteCb0x1C() {
+
+}
+
+function ExecuteCb0x1D() {
+
+}
+
+function ExecuteCb0x1E() {
+
+}
+
+function ExecuteCb0x1F() {
+
+}
+
+function ExecuteCb0x20() {
+
+}
+
+function ExecuteCb0x21() {
+
+}
+
+function ExecuteCb0x22() {
+
+}
+
+function ExecuteCb0x23() {
+
+}
+
+function ExecuteCb0x24() {
+
+}
+
+function ExecuteCb0x25() {
+
+}
+
+function ExecuteCb0x26() {
+
+}
+
+function ExecuteCb0x27() {
+
+}
+
+function ExecuteCb0x28() {
+
+}
+
+function ExecuteCb0x29() {
+
+}
+
+function ExecuteCb0x2A() {
+
+}
+
+function ExecuteCb0x2B() {
+
+}
+
+function ExecuteCb0x2C() {
+
+}
+
+function ExecuteCb0x2D() {
+
+}
+
+function ExecuteCb0x2E() {
+
+}
+
+function ExecuteCb0x2F() {
+
+}
+
+function ExecuteCb0x30() {
+
+}
+
+function ExecuteCb0x31() {
+
+}
+
+function ExecuteCb0x32() {
+
+}
+
+function ExecuteCb0x33() {
+
+}
+
+function ExecuteCb0x34() {
+
+}
+
+function ExecuteCb0x35() {
+
+}
+
+function ExecuteCb0x36() {
+
+}
+
+function ExecuteCb0x37() {
+
+}
+
+function ExecuteCb0x38() {
+
+}
+
+function ExecuteCb0x39() {
+
+}
+
+function ExecuteCb0x3A() {
+
+}
+
+function ExecuteCb0x3B() {
+
+}
+
+function ExecuteCb0x3C() {
+
+}
+
+function ExecuteCb0x3D() {
+
+}
+
+function ExecuteCb0x3E() {
+
+}
+
+function ExecuteCb0x3F() {
+
+}
+
+function ExecuteCb0x40() {
+
+}
+
+function ExecuteCb0x41() {
+
+}
+
+function ExecuteCb0x42() {
+
+}
+
+function ExecuteCb0x43() {
+
+}
+
+function ExecuteCb0x44() {
+
+}
+
+function ExecuteCb0x45() {
+
+}
+
+function ExecuteCb0x46() {
+
+}
+
+function ExecuteCb0x47() {
+
+}
+
+function ExecuteCb0x48() {
+
+}
+
+function ExecuteCb0x49() {
+
+}
+
+function ExecuteCb0x4A() {
+
+}
+
+function ExecuteCb0x4B() {
+
+}
+
+function ExecuteCb0x4C() {
+
+}
+
+function ExecuteCb0x4D() {
+
+}
+
+function ExecuteCb0x4E() {
+
+}
+
+function ExecuteCb0x4F() {
+
+}
+
+function ExecuteCb0x50() {
+
+}
+
+function ExecuteCb0x51() {
+
+}
+
+function ExecuteCb0x52() {
+
+}
+
+function ExecuteCb0x53() {
+
+}
+
+function ExecuteCb0x54() {
+
+}
+
+function ExecuteCb0x55() {
+
+}
+
+function ExecuteCb0x56() {
+
+}
+
+function ExecuteCb0x57() {
+
+}
+
+function ExecuteCb0x58() {
+
+}
+
+function ExecuteCb0x59() {
+
+}
+
+function ExecuteCb0x5A() {
+
+}
+
+function ExecuteCb0x5B() {
+
+}
+
+function ExecuteCb0x5C() {
+
+}
+
+function ExecuteCb0x5D() {
+
+}
+
+function ExecuteCb0x5E() {
+
+}
+
+function ExecuteCb0x5F() {
+
+}
+
+function ExecuteCb0x60() {
+
+}
+
+function ExecuteCb0x61() {
+
+}
+
+function ExecuteCb0x62() {
+
+}
+
+function ExecuteCb0x63() {
+
+}
+
+function ExecuteCb0x64() {
+
+}
+
+function ExecuteCb0x65() {
+
+}
+
+function ExecuteCb0x66() {
+
+}
+
+function ExecuteCb0x67() {
+
+}
+
+function ExecuteCb0x68() {
+
+}
+
+function ExecuteCb0x69() {
+
+}
+
+function ExecuteCb0x6A() {
+
+}
+
+function ExecuteCb0x6B() {
+
+}
+
+function ExecuteCb0x6C() {
+
+}
+
+function ExecuteCb0x6D() {
+
+}
+
+function ExecuteCb0x6E() {
+
+}
+
+function ExecuteCb0x6F() {
+
+}
+
+function ExecuteCb0x70() {
+
+}
+
+function ExecuteCb0x71() {
+
+}
+
+function ExecuteCb0x72() {
+
+}
+
+function ExecuteCb0x73() {
+
+}
+
+function ExecuteCb0x74() {
+
+}
+
+function ExecuteCb0x75() {
+
+}
+
+function ExecuteCb0x76() {
+
+}
+
+function ExecuteCb0x77() {
+
+}
+
+function ExecuteCb0x78() {
+
+}
+
+function ExecuteCb0x79() {
+
+}
+
+function ExecuteCb0x7A() {
+
+}
+
+function ExecuteCb0x7B() {
+
+}
+
+function ExecuteCb0x7C() {
+
+}
+
+function ExecuteCb0x7D() {
+
+}
+
+function ExecuteCb0x7E() {
+
+}
+
+function ExecuteCb0x7F() {
+
+}
+// RES 0, B
+// Flags: - - - -
+function ExecuteCb0x80() {
+    RES_R_b(HIGH, BC, 0);
+}
+// RES 0, C
+// Flags: - - - -
+function ExecuteCb0x81() {
+    RES_R_b(LOW, BC, 0);
+}
+// RES 0, D
+// Flags: - - - -
+function ExecuteCb0x82() {
+    RES_R_b(HIGH, DE, 0);
+}
+// RES 0, E
+// Flags: - - - -
+function ExecuteCb0x83() {
+    RES_R_b(LOW, DE, 0);
+}
+// RES 0, H
+// Flags: - - - -
+function ExecuteCb0x84() {
+    RES_R_b(HIGH, HL, 0);
+}
+// RES 0, L
+// Flags: - - - -
+function ExecuteCb0x85() {
+    RES_R_b(LOW, HL, 0);
+}
+// RES 0, (HL)
+// Flags: - - - -
+function ExecuteCb0x86() {
+    RES__HL__b(0);
+}
+// RES 0, A
+// Flags: - - - -
+function ExecuteCb0x87() {
+    RES_R_b(HIGH, AF, 0);
+}
+// RES 1, B
+// Flags: - - - -
+function ExecuteCb0x88() {
+    RES_R_b(HIGH, BC, 1);
+}
+// RES 1, C
+// Flags: - - - -
+function ExecuteCb0x89() {
+    RES_R_b(LOW, BC, 1);
+}
+// RES 1, D
+// Flags: - - - -
+function ExecuteCb0x8A() {
+    RES_R_b(HIGH, DE, 1);
+}
+// RES 1, E
+// Flags: - - - -
+function ExecuteCb0x8B() {
+    RES_R_b(LOW, DE, 1);
+}
+// RES 1, H
+// Flags: - - - -
+function ExecuteCb0x8C() {
+    RES_R_b(HIGH, HL, 1);
+}
+// RES 1, L
+// Flags: - - - -
+function ExecuteCb0x8D() {
+    RES_R_b(LOW, HL, 1);
+}
+// RES 1, (HL)
+// Flags: - - - -
+function ExecuteCb0x8E() {
+    RES__HL__b(1);
+}
+// RES 1, A
+// Flags: - - - -
+function ExecuteCb0x8F() {
+    RES_R_b(HIGH, AF, 1);
+}
+// RES 2, B
+// Flags: - - - -
+function ExecuteCb0x90() {
+    RES_R_b(HIGH, BC, 2);
+}
+// RES 2, C
+// Flags: - - - -
+function ExecuteCb0x91() {
+    RES_R_b(LOW, BC, 2);
+}
+// RES 2, D
+// Flags: - - - -
+function ExecuteCb0x92() {
+    RES_R_b(HIGH, DE, 2);
+}
+// RES 2, E
+// Flags: - - - -
+function ExecuteCb0x93() {
+    RES_R_b(LOW, DE, 2);
+}
+// RES 2, H
+// Flags: - - - -
+function ExecuteCb0x94() {
+    RES_R_b(HIGH, HL, 2);
+}
+// RES 2, L
+// Flags: - - - -
+function ExecuteCb0x95() {
+    RES_R_b(LOW, HL, 2);
+}
+// RES 2, (HL)
+// Flags: - - - -
+function ExecuteCb0x96() {
+    RES__HL__b(2);
+}
+// RES 2, A
+// Flags: - - - -
+function ExecuteCb0x97() {
+    RES_R_b(HIGH, AF, 2);
+}
+// RES 3, B
+// Flags: - - - -
+function ExecuteCb0x98() {
+    RES_R_b(HIGH, BC, 3);
+}
+// RES 3, C
+// Flags: - - - -
+function ExecuteCb0x99() {
+    RES_R_b(LOW, BC, 3);
+}
+// RES 3, D
+// Flags: - - - -
+function ExecuteCb0x9A() {
+    RES_R_b(HIGH, DE, 3);
+}
+// RES 3, E
+// Flags: - - - -
+function ExecuteCb0x9B() {
+    RES_R_b(LOW, DE, 3);
+}
+// RES 3, H
+// Flags: - - - -
+function ExecuteCb0x9C() {
+    RES_R_b(HIGH, HL, 3);
+}
+// RES 3, L
+// Flags: - - - -
+function ExecuteCb0x9D() {
+    RES_R_b(LOW, HL, 3);
+}
+// RES 3, (HL)
+// Flags: - - - -
+function ExecuteCb0x9E() {
+    RES__HL__b(3);
+}
+// RES 3, A
+// Flags: - - - -
+function ExecuteCb0x9F() {
+    RES_R_b(HIGH, AF, 3);
+}
+// RES 4, B
+// Flags: - - - -
+function ExecuteCb0xA0() {
+    RES_R_b(HIGH, BC, 4);
+}
+// RES 4, C
+// Flags: - - - -
+function ExecuteCb0xA1() {
+    RES_R_b(LOW, BC, 4);
+}
+// RES 4, D
+// Flags: - - - -
+function ExecuteCb0xA2() {
+    RES_R_b(HIGH, DE, 4);
+}
+// RES 4, E
+// Flags: - - - -
+function ExecuteCb0xA3() {
+    RES_R_b(LOW, DE, 4);
+}
+// RES 4, H
+// Flags: - - - -
+function ExecuteCb0xA4() {
+    RES_R_b(HIGH, HL, 4);
+}
+// RES 4, L
+// Flags: - - - -
+function ExecuteCb0xA5() {
+    RES_R_b(LOW, HL, 4);
+}
+// RES 4, (HL)
+// Flags: - - - -
+function ExecuteCb0xA6() {
+    RES__HL__b(4);
+}
+// RES 4, A
+// Flags: - - - -
+function ExecuteCb0xA7() {
+    RES_R_b(HIGH, AF, 4);
+}
+// RES 5, B
+// Flags: - - - -
+function ExecuteCb0xA8() {
+    RES_R_b(HIGH, BC, 5);
+}
+// RES 5, C
+// Flags: - - - -
+function ExecuteCb0xA9() {
+    RES_R_b(LOW, BC, 5);
+}
+// RES 5, D
+// Flags: - - - -
+function ExecuteCb0xAA() {
+    RES_R_b(HIGH, DE, 5);
+}
+// RES 5, E
+// Flags: - - - -
+function ExecuteCb0xAB() {
+    RES_R_b(LOW, DE, 5);
+}
+// RES 5, H
+// Flags: - - - -
+function ExecuteCb0xAC() {
+    RES_R_b(HIGH, HL, 5);
+}
+// RES 5, L
+// Flags: - - - -
+function ExecuteCb0xAD() {
+    RES_R_b(LOW, HL, 5);
+}
+// RES 5, (HL)
+// Flags: - - - -
+function ExecuteCb0xAE() {
+    RES__HL__b(5);
+}
+// RES 5, A
+// Flags: - - - -
+function ExecuteCb0xAF() {
+    RES_R_b(HIGH, AF, 5);
+}
+// RES 6, B
+// Flags: - - - -
+function ExecuteCb0xB0() {
+    RES_R_b(HIGH, BC, 6);
+}
+// RES 6, C
+// Flags: - - - -
+function ExecuteCb0xB1() {
+    RES_R_b(LOW, BC, 6);
+}
+// RES 6, D
+// Flags: - - - -
+function ExecuteCb0xB2() {
+    RES_R_b(HIGH, DE, 6);
+}
+// RES 6, E
+// Flags: - - - -
+function ExecuteCb0xB3() {
+    RES_R_b(LOW, DE, 6);
+}
+// RES 6, H
+// Flags: - - - -
+function ExecuteCb0xB4() {
+    RES_R_b(HIGH, HL, 6);
+}
+// RES 6, L
+// Flags: - - - -
+function ExecuteCb0xB5() {
+    RES_R_b(LOW, HL, 6);
+}
+// RES 6, (HL)
+// Flags: - - - -
+function ExecuteCb0xB6() {
+    RES__HL__b(6);
+}
+// RES 6, A
+// Flags: - - - -
+function ExecuteCb0xB7() {
+    RES_R_b(HIGH, AF, 6);
+}
+// RES 7, B
+// Flags: - - - -
+function ExecuteCb0xB8() {
+    RES_R_b(HIGH, BC, 7);
+}
+// RES 7, C
+// Flags: - - - -
+function ExecuteCb0xB9() {
+    RES_R_b(LOW, BC, 7);
+}
+// RES 7, D
+// Flags: - - - -
+function ExecuteCb0xBA() {
+    RES_R_b(HIGH, DE, 7);
+}
+// RES 7, E
+// Flags: - - - -
+function ExecuteCb0xBB() {
+    RES_R_b(LOW, DE, 7);
+}
+// RES 7, H
+// Flags: - - - -
+function ExecuteCb0xBC() {
+    RES_R_b(HIGH, AF, 7);
+}
+// RES 7, L
+// Flags: - - - -
+function ExecuteCb0xBD() {
+    RES_R_b(LOW, HL, 7);
+}
+// RES 7, (HL)
+// Flags: - - - -
+function ExecuteCb0xBE() {
+    RES__HL__b(7);
+}
+// RES 7, A
+// Flags: - - - -
+function ExecuteCb0xBF() {
+    RES_R_b(HIGH, AF, 7);
+}
+// SET 0, B
+// Flags: - - - -
+function ExecuteCb0xC0() {
+    SET_R_b(HIGH, BC, 0);
+}
+// SET 0, C
+// Flags: - - - -
+function ExecuteCb0xC1() {
+    SET_R_b(LOW, BC, 0);
+}
+// SET 0, D
+// Flags: - - - -
+function ExecuteCb0xC2() {
+    SET_R_b(HIGH, DE, 0);
+}
+// SET 0, E
+// Flags: - - - -
+function ExecuteCb0xC3() {
+    SET_R_b(LOW, DE, 0);
+}
+// SET 0, H
+// Flags: - - - -
+function ExecuteCb0xC4() {
+    SET_R_b(HIGH, HL, 0);
+}
+// SET 0, L
+// Flags: - - - -
+function ExecuteCb0xC5() {
+    SET_R_b(LOW, HL, 0);
+}
+// SET 0, (HL)
+// Flags: - - - -
+function ExecuteCb0xC6() {
+    SET__HL__b(0);
+}
+// SET 0, A
+// Flags: - - - -
+function ExecuteCb0xC7() {
+    SET_R_b(HIGH, AF, 0);
+}
+// SET 1, B
+// Flags: - - - -
+function ExecuteCb0xC8() {
+    SET_R_b(HIGH, BC, 1);
+}
+// SET 1, C
+// Flags: - - - -
+function ExecuteCb0xC9() {
+    SET_R_b(LOW, BC, 1);
+}
+// SET 1, D
+// Flags: - - - -
+function ExecuteCb0xCA() {
+    SET_R_b(HIGH, DE, 1);
+}
+// SET 1, E
+// Flags: - - - -
+function ExecuteCb0xCB() {
+    SET_R_b(LOW, DE, 1);
+}
+// SET 1, H
+// Flags: - - - -
+function ExecuteCb0xCC() {
+    SET_R_b(HIGH, HL, 1);
+}
+// SET 1, L
+// Flags: - - - -
+function ExecuteCb0xCD() {
+    SET_R_b(LOW, HL, 1);
+}
+// SET 1, (HL)
+// Flags: - - - -
+function ExecuteCb0xCE() {
+    SET__HL__b(1);
+}
+// SET 1, A
+// Flags: - - - -
+function ExecuteCb0xCF() {
+    SET_R_b(HIGH, AF, 1);
+}
+// SET 2, B
+// Flags: - - - -
+function ExecuteCb0xD0() {
+    SET_R_b(HIGH, BC, 2);
+}
+// SET 2, C
+// Flags: - - - -
+function ExecuteCb0xD1() {
+    SET_R_b(LOW, BC, 2);
+}
+// SET 2, D
+// Flags: - - - -
+function ExecuteCb0xD2() {
+    SET_R_b(HIGH, DE, 2);
+}
+// SET 2, E
+// Flags: - - - -
+function ExecuteCb0xD3() {
+    SET_R_b(LOW, DE, 2);
+}
+// SET 2, H
+// Flags: - - - -
+function ExecuteCb0xD4() {
+    SET_R_b(HIGH, HL, 2);
+}
+// SET 2, L
+// Flags: - - - -
+function ExecuteCb0xD5() {
+    SET_R_b(LOW, HL, 2);
+}
+// SET 2, (HL)
+// Flags: - - - -
+function ExecuteCb0xD6() {
+    SET__HL__b(2);
+}
+// SET 2, A
+// Flags: - - - -
+function ExecuteCb0xD7() {
+    SET_R_b(HIGH, AF, 2);
+}
+// SET 3, B
+// Flags: - - - -
+function ExecuteCb0xD8() {
+    SET_R_b(HIGH, BC, 3);
+}
+// SET 3, C
+// Flags: - - - -
+function ExecuteCb0xD9() {
+    SET_R_b(LOW, BC, 3);
+}
+// SET 3, D
+// Flags: - - - -
+function ExecuteCb0xDA() {
+    SET_R_b(HIGH, DE, 3);
+}
+// SET 3, E
+// Flags: - - - -
+function ExecuteCb0xDB() {
+    SET_R_b(LOW, DE, 3);
+}
+// SET 3, H
+// Flags: - - - -
+function ExecuteCb0xDC() {
+    SET_R_b(HIGH, HL, 3);
+}
+// SET 3, L
+// Flags: - - - -
+function ExecuteCb0xDD() {
+    SET_R_b(LOW, HL, 3);
+}
+// SET 3, (HL)
+// Flags: - - - -
+function ExecuteCb0xDE() {
+    SET__HL__b(3);
+}
+// SET 3, A
+// Flags: - - - -
+function ExecuteCb0xDF() {
+    SET_R_b(HIGH, AF, 3);
+}
+// SET 4, B
+// Flags: - - - -
+function ExecuteCb0xE0() {
+    SET_R_b(HIGH, BC, 4);
+}
+// SET 4, C
+// Flags: - - - -
+function ExecuteCb0xE1() {
+    SET_R_b(LOW, BC, 4);
+}
+// SET 4, D
+// Flags: - - - -
+function ExecuteCb0xE2() {
+    SET_R_b(HIGH, DE, 4);
+}
+// SET 4, E
+// Flags: - - - -
+function ExecuteCb0xE3() {
+    SET_R_b(LOW, DE, 4);
+}
+// SET 4, H
+// Flags: - - - -
+function ExecuteCb0xE4() {
+    SET_R_b(HIGH, HL, 4);
+}
+// SET 4, L
+// Flags: - - - -
+function ExecuteCb0xE5() {
+    SET_R_b(LOW, HL, 4);
+}
+// SET 4, (HL)
+// Flags: - - - -
+function ExecuteCb0xE6() {
+    SET__HL__b(4);
+}
+// SET 4, A
+// Flags: - - - -
+function ExecuteCb0xE7() {
+    SET_R_b(HIGH, AF, 4);
+}
+// SET 5, B
+// Flags: - - - -
+function ExecuteCb0xE8() {
+    SET_R_b(HIGH, BC, 5);
+}
+// SET 5, C
+// Flags: - - - -
+function ExecuteCb0xE9() {
+    SET_R_b(LOW, BC, 5);
+}
+// SET 5, D
+// Flags: - - - -
+function ExecuteCb0xEA() {
+    SET_R_b(HIGH, DE, 5);
+}
+// SET 5, E
+// Flags: - - - -
+function ExecuteCb0xEB() {
+    SET_R_b(LOW, DE, 5);
+}
+// SET 5, H
+// Flags: - - - -
+function ExecuteCb0xEC() {
+    SET_R_b(HIGH, HL, 5);
+}
+// SET 5, L
+// Flags: - - - -
+function ExecuteCb0xED() {
+    SET_R_b(LOW, HL, 5);
+}
+// SET 5, (HL)
+// Flags: - - - -
+function ExecuteCb0xEE() {
+    SET__HL__b(5);
+}
+// SET 5, A
+// Flags: - - - -
+function ExecuteCb0xEF() {
+    SET_R_b(HIGH, AF, 5);
+}
+// SET 6, B
+// Flags: - - - -
+function ExecuteCb0xF0() {
+    SET_R_b(HIGH, BC, 6);
+}
+// SET 6, C
+// Flags: - - - -
+function ExecuteCb0xF1() {
+    SET_R_b(LOW, BC, 6);
+}
+// SET 6, D
+// Flags: - - - -
+function ExecuteCb0xF2() {
+    SET_R_b(HIGH, DE, 6);
+}
+// SET 6, E
+// Flags: - - - -
+function ExecuteCb0xF3() {
+    SET_R_b(LOW, DE, 6);
+}
+// SET 6, H
+// Flags: - - - -
+function ExecuteCb0xF4() {
+    SET_R_b(HIGH, HL, 6);
+}
+// SET 6, L
+// Flags: - - - -
+function ExecuteCb0xF5() {
+    SET_R_b(LOW, HL, 6);
+}
+// SET 6, (HL)
+// Flags: - - - -
+function ExecuteCb0xF6() {
+    SET__HL__b(6);
+}
+// SET 6, A
+// Flags: - - - -
+function ExecuteCb0xF7() {
+    SET_R_b(HIGH, AF, 6);
+}
+// SET 7, B
+// Flags: - - - -
+function ExecuteCb0xF8() {
+    SET_R_b(HIGH, BC, 7);
+}
+// SET 7, C
+// Flags: - - - -
+function ExecuteCb0xF9() {
+    SET_R_b(LOW, BC, 7);
+}
+// SET 7, D
+// Flags: - - - -
+function ExecuteCb0xFA() {
+    SET_R_b(HIGH, DE, 7);
+}
+// SET 7, E
+// Flags: - - - -
+function ExecuteCb0xFB() {
+    SET_R_b(LOW, DE, 7);
+}
+// SET 7, H
+// Flags: - - - -
+function ExecuteCb0xFC() {
+    SET_R_b(HIGH, HL, 7);
+}
+// SET 7, L
+// Flags: - - - -
+function ExecuteCb0xFD() {
+    SET_R_b(LOW, HL, 7);
+}
+// SET 7, (HL)
+// Flags: - - - -
+function ExecuteCb0xFE() {
+    SET__HL__b(7);
+}
+// SET 7, A
+// Flags: - - - -
+function ExecuteCb0xFF() {
+    SET_R_b(HIGH, AF, 7);
 }
