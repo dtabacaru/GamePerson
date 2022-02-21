@@ -4,22 +4,20 @@ const RAM_SIZE      = 8 * 1024; // 8 KB
 const REGISTER_SIZE = 2;        // Bytes
 
 // Memory
-var RamBuffer     = new ArrayBuffer(RAM_SIZE);
-var Ram           = new DataView(RamBuffer);
-var EchoRamBuffer = new ArrayBuffer(RAM_SIZE);
-var EchoRam       = new DataView(EchoRamBuffer);
+const RamBuffer     = new ArrayBuffer(RAM_SIZE);
+const Ram           = new DataView(RamBuffer);
+const EchoRamBuffer = new ArrayBuffer(RAM_SIZE);
+const EchoRam       = new DataView(EchoRamBuffer);
+const RomReader     = new FileReader();
 var Rom;
 var Instruction   = 0x00;
-
-// Helpers
-var RomReader   = new FileReader();
 
 // Flags
 var Halt                  = false;
 var Interrupt             = false;
 var InterruptMasterEnable = false;
 
-var Debug                 = true; // TODO: Disable this one day...
+const Debug               = true; // TODO: Disable this one day...
 
 // ReadRom()
 //
@@ -118,7 +116,7 @@ function HandleInterrupts() {
 //
 function ReadAndIncrementPC8Bit() {
     let jackson_sux = Read16BitReg(PC);
-    Write16BitReg(PC, Read16BitReg(PC) + 1);
+    Write16BitReg(PC, jackson_sux + 1);
     return Rom.getUint8(jackson_sux);
 }
 
@@ -133,7 +131,7 @@ function ReadAndIncrementPC8Bit() {
 //
 function ReadAndIncrementPC8BitSigned() {
     let jackson_sux = Read16BitReg(PC);
-    Write16BitReg(PC, Read16BitReg(PC) + 1);
+    Write16BitReg(PC, jackson_sux + 1);
     return Rom.getInt8(jackson_sux);
 }
 
@@ -148,7 +146,7 @@ function ReadAndIncrementPC8BitSigned() {
 //
 function ReadAndIncrementPC16Bit() {
     let jackson_sux = Read16BitReg(PC);
-    Write16BitReg(PC, Read16BitReg(PC) + 2);
+    Write16BitReg(PC, jackson_sux + 2);
     return Rom.getUint16(jackson_sux, LITTLE_ENDIAN);
 }
 

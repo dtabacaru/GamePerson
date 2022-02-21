@@ -89,7 +89,7 @@ function Write16BitReg(RR, val) {
 //
 // NOTES:
 // Indices are defined above and can be accessed easily
-// e.g. var regAVal = Read8BitReg(A, AF);
+// e.g. var regAVal = Read8BitReg(HIGH, AF);
 //
 function Read8BitReg(R, RR) {
     return RR.getUint8(R);
@@ -107,7 +107,7 @@ function Read8BitReg(R, RR) {
 //
 // NOTES:
 // Indices are defined above and can be accessed easily
-// e.g. Write8BitReg(A, AF, 0xFF);
+// e.g. Write8BitReg(HIGH, AF, 0xFF);
 //
 function Write8BitReg(R, RR, val) {
     return RR.setUint8(R, val);

@@ -29,7 +29,7 @@ function ReadMemBox() {
     if (!isNaN(jackson_sux)) {
         if (jackson_sux >= 0 && jackson_sux <= 0xFFFF) {
             let lowerByte = ReadAddress(jackson_sux);
-            let higherByte = jackson_sux < 0xFFFE ? ReadAddress(jackson_sux + 1) : 0;
+            let higherByte = jackson_sux <= 0xFFFE ? ReadAddress(jackson_sux + 1) : 0;
             document.getElementById("MemBoxVar").innerHTML = NumberToHexString(lowerByte | (higherByte << 8), 4);
         }
     }
