@@ -1,10 +1,23 @@
-// Constants
-const RESET_VECTOR = 0x0100; // ROM application starts at 0x0100. Skip the boot rom.
-const STACK_VECTOR = 0xFFFE;
-const BIG_ENDIAN    = false;
+/*
+Register Description
+15          0
+|  H  |  L  |
+
+Memory Array (Little Endian)
+0           15
+|  L  |  H  |
+*/
 const LITTLE_ENDIAN = true;
-const HIGH = 0;
-const LOW  = 1;
+const HIGH = 1;
+const LOW  = 0;
+
+// Constants
+const RESET_VECTOR = 0x0100;
+const STACK_VECTOR = 0xFFFE;
+const AF_BOOT      = 0x01B0;
+const BC_BOOT      = 0x0013;
+const DE_BOOT      = 0x00D8;
+const HL_BOOT      = 0x014D;
 
 // Program Counter
 const PCBuffer = new ArrayBuffer(2);
@@ -19,26 +32,26 @@ Write16BitReg(SP, STACK_VECTOR);
 // AF - Accumulator/Flags
 const AFBuffer = new ArrayBuffer(2);
 const AF = new DataView(AFBuffer);
-Write16BitReg(AF, 0x01B0);
-const F_Z = 7; // bit
-const F_N = 6; // bit
-const F_H = 5; // bit
-const F_C = 4; // bit
+Write16BitReg(AF, AF_BOOT);
+const F_Z = 7; // Zero flag bit
+const F_N = 6; // Subtraction flag bit
+const F_H = 5; // Half carry flag bit
+const F_C = 4; // Carry flag bit
 
 // BC - Gen Storage
 const BCBuffer = new ArrayBuffer(2);
 const BC = new DataView(BCBuffer);
-Write16BitReg(BC, 0x0013);
+Write16BitReg(BC, BC_BOOT);
 
 // DE - Gen Storage
 const DEBuffer = new ArrayBuffer(2);
 const DE = new DataView(DEBuffer);
-Write16BitReg(DE, 0x00D8);
+Write16BitReg(DE, DE_BOOT);
 
 // HL - Address Pointer
 const HLBuffer = new ArrayBuffer(2);
 const HL = new DataView(HLBuffer);
-Write16BitReg(HL, 0x014D);
+Write16BitReg(HL, HL_BOOT);
 
 // Read16BitReg(RR)
 //

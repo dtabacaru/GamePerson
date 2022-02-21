@@ -84,21 +84,21 @@ function SUB(val) {
 }
 // Flags: 0 0 0 A7
 function RLCA() {
-    let result = (Read8BitReg(HIGH, AF) << 1) | (Read8BitReg(HIGH, AF) >> 7);
+    let result = ((Read8BitReg(HIGH, AF) << 1) | (Read8BitReg(HIGH, AF) >> 7)) & 0xFF;
     ResetFlag(F_Z);
     ResetFlag(F_N);
     ResetFlag(F_H);
     if (Read8BitReg(HIGH, AF) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
-    Write8BitReg(HIGH, AF, result & 0xFF);
+    Write8BitReg(HIGH, AF, result);
 }
 // Flags: 0 0 0 A7
 function RLA() {
-    let result = (Read8BitReg(HIGH, AF) << 1) | (ReadFlag(F_C) >> 7);
+    let result = ((Read8BitReg(HIGH, AF) << 1) | (ReadFlag(F_C) >> 7)) & 0xFF;
     ResetFlag(F_Z);
     ResetFlag(F_N);
     ResetFlag(F_H);
     if (Read8BitReg(HIGH, AF) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
-    Write8BitReg(HIGH, AF, result & 0xFF);
+    Write8BitReg(HIGH, AF, result);
 }
 // Flags: 0 0 0 A0
 function RRCA() {
@@ -170,20 +170,152 @@ function LD__HL__R(R, RR) {
     WriteAddress(Read16BitReg(HL), Read8BitReg(R, RR));
 }
 // Flags: - - - -
-function SET_R_b(R, RR, b) {
+function SET_R(R, RR, b) {
     Write8BitReg(R, RR, Read8BitReg(R, RR) | (1 << b));
 }
 // Flags: - - - -
-function RES_R_b(R, RR, b) {
+function RES_R(R, RR, b) {
     Write8BitReg(R, RR, Read8BitReg(R, RR) & ~(1 << b));
 }
 // Flags: - - - -
-function SET__HL__b(b) {
+function SET__HL_(b) {
     WriteAddress(Read16BitReg(HL), ReadAddress(Read16BitReg(HL)) | (1 << b));
 }
 // Flags: - - - -
-function RES__HL__b(b) {
+function RES__HL_(b) {
     WriteAddress(Read16BitReg(HL), ReadAddress(Read16BitReg(HL)) & ~(1 << b));
+}
+// Flags: !Rb 0 1 -
+function BIT_R(R, RR, b) {
+    if (!(Read8BitReg(R, RR) & (1 << b))) SetFlag(F_Z); else ResetFlag(F_Z);
+    ResetFlag(F_N);
+    SetFlag(F_H);
+}
+// Flags: !(HL)b 0 1 -
+function BIT__HL_(b) {
+    if (!(ReadAddress(Read16BitReg(HL)) & (1 << b))) SetFlag(F_Z); else ResetFlag(F_Z);
+    ResetFlag(F_N);
+    SetFlag(F_H);
+}
+// Flags: Z 0 0 R7
+function LS_R(R, RR, val) {
+    SetZeroFlag(val);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    if (Read8BitReg(R, RR) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
+    Write8BitReg(R, RR, val);
+}
+// Flags: Z 0 0 (HL)7
+function LS__HL_(val) {
+    SetZeroFlag(val);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    if (ReadAddress(Read16BitReg(HL)) & 0b10000000) SetFlag(F_C); else ResetFlag(F_C);
+    WriteAddress(Read16BitReg(HL), val);
+}
+// Flags: Z 0 0 R7
+function RLC_R(R, RR) {
+    let result = ((Read8BitReg(R, RR) << 1) | (Read8BitReg(R, RR) >> 7)) & 0xFF;
+    LS_R(R, RR, result);
+}
+// Flags: Z 0 0 R7
+function RLC__HL_() {
+    let result = ((ReadAddress(Read16BitReg(HL)) << 1) | (ReadAddress(Read16BitReg(HL)) >> 7)) & 0xFF;
+    LS__HL_(result);
+}
+// Flags: Z 0 0 R7
+function RL_R(R, RR) {
+    let result = ((Read8BitReg(R, RR) << 1) | ReadFlag(F_C)) & 0xFF;
+    LS_R(R, RR, result);
+}
+// Flags: Z 0 0 R7
+function RL__HL_() {
+    let result = ((ReadAddress(Read16BitReg(HL)) << 1) | ReadFlag(F_C)) & 0xFF;
+    LS__HL_(result);
+}
+// Flags: Z 0 0 R7
+function SLA_R(R, RR) {
+    let result = (Read8BitReg(R, RR) << 1) & 0xFF;
+    LS_R(R, RR, result);
+}
+// Flags: Z 0 0 (HL)7
+function SLA__HL_() {
+    let result = (ReadAddress(Read16BitReg(HL)) << 1) & 0xFF;
+    LS__HL_(result);
+}
+// Flags: Z 0 0 R0
+function RS_R(R, RR, val) {
+    SetZeroFlag(val);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    if (Read8BitReg(R, RR) & 0b00000001) SetFlag(F_C); else ResetFlag(F_C);
+    Write8BitReg(R, RR, val);
+}
+// Flags: Z 0 0 (HL)7
+function RS__HL_(val) {
+    SetZeroFlag(val);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    if (ReadAddress(Read16BitReg(HL)) & 0b00000001) SetFlag(F_C); else ResetFlag(F_C);
+    WriteAddress(Read16BitReg(HL), val);
+}
+// Flags: Z 0 0 R0
+function RRC_R(R, RR) {
+    let result = (Read8BitReg(R, RR) >> 1) | (Read8BitReg(R, RR) << 7);
+    RS_R(R, RR, result);
+}
+// Flags: Z 0 0 R0
+function RRC__HL_() {
+    let result = (ReadAddress(Read16BitReg(HL)) >> 1) | (ReadAddress(Read16BitReg(HL)) << 7);
+    RS__HL_(result);
+}
+// Flags: Z 0 0 R0
+function RR_R(R, RR) {
+    let result = (Read8BitReg(R, RR) >> 1) | (ReadFlag(F_C) << 7);
+    RS_R(R, RR, result);
+}
+// Flags: Z 0 0 R0
+function RR__HL_() {
+    let result = (ReadAddress(Read16BitReg(HL)) >> 1) | (ReadFlag(F_C) << 7);
+    RS__HL_(result);
+}
+// Flags: Z 0 0 R0
+function SRA_R(R, RR) {
+    let result = (Read8BitReg(R, RR) >> 1) | (Read8BitReg(R, RR) & 0b10000000);
+    RS_R(R, RR, result);
+}
+// Flags: Z 0 0 R0
+function SRA__HL_() {
+    let result = (ReadAddress(Read16BitReg(HL)) >> 1) | (ReadAddress(Read16BitReg(HL)) << 7);
+    RS__HL_(result);
+}
+// Flags: Z 0 0 R0
+function SRL_R(R, RR) {
+    let result = (Read8BitReg(R, RR) >> 1);
+    RS_R(R, RR, result);
+}
+// Flags: Z 0 0 (HL)0
+function SRL__HL_() {
+    let result = (ReadAddress(Read16BitReg(HL)) >> 1);
+    RS__HL_(result);
+}
+// Flags: Z 0 0 0
+function SWAP_R(R, RR) {
+    let result = (Read8BitReg(R, RR) & 0xFF00 >> 4) | (Read8BitReg(R, RR) & 0x00FF << 4);
+    Write8BitReg(R, RR, result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    ResetFlag(F_C);
+}
+// Flags: Z 0 0 0
+function SWAP__HL_() {
+    let result = (ReadAddress(Read16BitReg(HL)) >> 4) | (ReadAddress(Read16BitReg(HL)) & 0x00FF << 4);
+    WriteAddress(Read16BitReg(HL), result);
+    SetZeroFlag(result);
+    ResetFlag(F_N);
+    ResetFlag(F_H);
+    ResetFlag(F_C);
 }
 // Flags: - - - -
 function INC_RR(RR) {
@@ -1548,1154 +1680,1283 @@ function Execute0xFF() {
 }
 
 // 16-bit Opcodes
+// RLC B
+// Flags: Z 0 0 R7
 function ExecuteCb0x00() {
-
+    RLC_R(HIGH, BC);
 }
-
+// RLC C
+// Flags: Z 0 0 R7
 function ExecuteCb0x01() {
-
+    RLC_R(LOW, BC);
 }
-
+// RLC D
+// Flags: Z 0 0 R7
 function ExecuteCb0x02() {
-
+    RLC_R(HIGH, DE);
 }
-
+// RLC E
+// Flags: Z 0 0 R7
 function ExecuteCb0x03() {
-
+    RLC_R(LOW, DE);
 }
-
+// RLC H
+// Flags: Z 0 0 R7
 function ExecuteCb0x04() {
-
+    RLC_R(HIGH, HL);
 }
-
+// RLC L
+// Flags: Z 0 0 R7
 function ExecuteCb0x05() {
-
+    RLC_R(LOW, HL);
 }
-
+// RLC (HL)
+// Flags: Z 0 0 (HL)7
 function ExecuteCb0x06() {
-
+    RLC__HL_();
 }
-
+// RLC A
+// Flags: Z 0 0 R7
 function ExecuteCb0x07() {
-
+    RLC_R(HIGH, AF);
 }
-
+// RRC B
+// Flags: Z 0 0 R0
 function ExecuteCb0x08() {
-
+    RRC_R(HIGH, BC);
 }
-
+// RRC C
+// Flags: Z 0 0 R0
 function ExecuteCb0x09() {
-
+    RRC_R(LOW, BC);
 }
-
+// RRC D
+// Flags: Z 0 0 R0
 function ExecuteCb0x0A() {
-
+    RRC_R(HIGH, DE);
 }
-
+// RRC E
+// Flags: Z 0 0 R0
 function ExecuteCb0x0B() {
-
+    RRC_R(LOW, DE);
 }
-
+// RRC H
+// Flags: Z 0 0 R0
 function ExecuteCb0x0C() {
-
+    RRC_R(HIGH, HL);
 }
-
+// RRC L
+// Flags: Z 0 0 R0
 function ExecuteCb0x0D() {
-
+    RRC_R(LOW, HL);
 }
-
+// RRC (HL)
+// Flags: Z 0 0 (HL)0
 function ExecuteCb0x0E() {
-
+    RRC__HL_();
 }
-
+// RRC A
+// Flags: Z 0 0 R0
 function ExecuteCb0x0F() {
-
+    RRC_R(HIGH, AF);
 }
-
+// RL B
+// Flags: Z 0 0 R7
 function ExecuteCb0x10() {
-
+    RL_R(HIGH, BC);
 }
-
+// RL C
+// Flags: Z 0 0 R7
 function ExecuteCb0x11() {
-
+    RL_R(LOW, BC);
 }
-
+// RL D
+// Flags: Z 0 0 R7
 function ExecuteCb0x12() {
-
+    RL_R(HIGH, DE);
 }
-
+// RL E
+// Flags: Z 0 0 R7
 function ExecuteCb0x13() {
-
+    RL_R(LOW, DE);
 }
-
+// RL H
+// Flags: Z 0 0 R7
 function ExecuteCb0x14() {
-
+    RL_R(HIGH, HL);
 }
-
+// RL L
+// Flags: Z 0 0 R7
 function ExecuteCb0x15() {
-
+    RL_R(LOW, HL);
 }
-
+// RL HL
+// Flags: Z 0 0 (HL)7
 function ExecuteCb0x16() {
-
+    RL__HL_();
 }
-
+// RL A
+// Flags: Z 0 0 R7
 function ExecuteCb0x17() {
-
+    RL_R(HIGH, AF);
 }
-
+// RR B
+// Flags: Z 0 0 R0
 function ExecuteCb0x18() {
-
+    RR_R(HIGH, BC);
 }
-
+// RR C
+// Flags: Z 0 0 R0
 function ExecuteCb0x19() {
-
+    RR_R(LOW, BC);
 }
-
+// RR D
+// Flags: Z 0 0 R0
 function ExecuteCb0x1A() {
-
+    RR_R(HIGH, DE);
 }
-
+// RR E
+// Flags: Z 0 0 R0
 function ExecuteCb0x1B() {
-
+    RR_R(LOW, DE);
 }
-
+// RR H
+// Flags: Z 0 0 R0
 function ExecuteCb0x1C() {
-
+    RR_R(HIGH, HL);
 }
-
+// RR L
+// Flags: Z 0 0 R0
 function ExecuteCb0x1D() {
-
+    RR_R(LOW, HL);
 }
-
+// RR (HL)
+// Flags: Z 0 0 (HL)0
 function ExecuteCb0x1E() {
-
+    RR__HL_();
 }
-
+// RR A
+// Flags: Z 0 0 R0
 function ExecuteCb0x1F() {
-
+    RR_R(HIGH, AF);
 }
-
+// SLA B
+// Flags: Z 0 0 R7
 function ExecuteCb0x20() {
-
+    SLA_R(HIGH, BC);
 }
-
+// SLA C
+// Flags: Z 0 0 R7
 function ExecuteCb0x21() {
-
+    SLA_R(LOW, BC);
 }
-
+// SLA D
+// Flags: Z 0 0 R7
 function ExecuteCb0x22() {
-
+    SLA_R(HIGH, DE);
 }
-
+// SLA E
+// Flags: Z 0 0 R7
 function ExecuteCb0x23() {
-
+    SLA_R(LOW, DE);
 }
-
+// SLA H
+// Flags: Z 0 0 R7
 function ExecuteCb0x24() {
-
+    SLA_R(HIGH, HL);
 }
-
+// SLA L
+// Flags: Z 0 0 R7
 function ExecuteCb0x25() {
-
+    SLA_R(LOW, HL);
 }
-
+// SLA (HL)
+// Flags: Z 0 0 (HL)7
 function ExecuteCb0x26() {
-
+    SLA__HL_();
 }
-
+// SLA A
+// Flags: Z 0 0 R7
 function ExecuteCb0x27() {
-
+    SLA_R(HIGH, AF);
 }
-
+// SRA B
+// Flags: Z 0 0 R0
 function ExecuteCb0x28() {
-
+    SRA_R(HIGH, BC);
 }
-
+// SRA C
+// Flags: Z 0 0 R0
 function ExecuteCb0x29() {
-
+    SRA_R(LOW, BC);
 }
-
+// SRA D
+// Flags: Z 0 0 R0
 function ExecuteCb0x2A() {
-
+    SRA_R(HIGH, DE);
 }
-
+// SRA E
+// Flags: Z 0 0 R0
 function ExecuteCb0x2B() {
-
+    SRA_R(LOW, DE);
 }
-
+// SRA H
+// Flags: Z 0 0 R0
 function ExecuteCb0x2C() {
-
+    SRA_R(HIGH, HL);
 }
-
+// SRA L
+// Flags: Z 0 0 R0
 function ExecuteCb0x2D() {
-
+    SRA_R(LOW, HL);
 }
-
+// SRA (HL)
+// Flags: Z 0 0 (HL)0
 function ExecuteCb0x2E() {
-
+    SRA__HL_();
 }
-
+// SRA A
+// Flags: Z 0 0 R0
 function ExecuteCb0x2F() {
-
+    SRA_R(HIGH, AF);
 }
-
+// SWAP B
+// Flags: - - - -
 function ExecuteCb0x30() {
-
+    SWAP_R(HIGH, BC);
 }
-
+// SWAP C
+// Flags: - - - -
 function ExecuteCb0x31() {
-
+    SWAP_R(LOW, BC);
 }
-
+// SWAP D
+// Flags: - - - -
 function ExecuteCb0x32() {
-
+    SWAP_R(HIGH, DE);
 }
-
+// SWAP E
+// Flags: - - - -
 function ExecuteCb0x33() {
-
+    SWAP_R(LOW, DE);
 }
-
+// SWAP H
+// Flags: - - - -
 function ExecuteCb0x34() {
-
+    SWAP_R(HIGH, HL);
 }
-
+// SWAP L
+// Flags: - - - -
 function ExecuteCb0x35() {
-
+    SWAP_R(LOW, HL);
 }
-
+// SWAP (HL)
+// Flags: - - - -
 function ExecuteCb0x36() {
-
+    SWAP__HL_();
 }
-
+// SWAP A
+// Flags: - - - -
 function ExecuteCb0x37() {
-
+    SWAP_R(HIGH, AF);
 }
-
+// SRL B
+// Flags: Z 0 0 R0
 function ExecuteCb0x38() {
-
+    SRL_R(HIGH, BC);
 }
-
+// SRL C
+// Flags: Z 0 0 R0
 function ExecuteCb0x39() {
-
+    SRL_R(LOW, BC);
 }
-
+// SRL D
+// Flags: Z 0 0 R0
 function ExecuteCb0x3A() {
-
+    SRL_R(HIGH, DE);
 }
-
+// SRL E
+// Flags: Z 0 0 R0
 function ExecuteCb0x3B() {
-
+    SRL_R(LOW, DE);
 }
-
+// SRL H
+// Flags: Z 0 0 R0
 function ExecuteCb0x3C() {
-
+    SRL_R(HIGH, HL);
 }
-
+// SRL L
+// Flags: Z 0 0 R0
 function ExecuteCb0x3D() {
-
+    SRL_R(LOW, HL);
 }
-
+// SRL (HL)
+// Flags: Z 0 0 (HL)0
 function ExecuteCb0x3E() {
-
+    SRL__HL_();
 }
-
+// SRL A
+// Flags: Z 0 0 R0
 function ExecuteCb0x3F() {
-
+    SRL_R(HIGH, AF);
 }
-
+// BIT 0, B
+// Flags: !R0 0 1 - 
 function ExecuteCb0x40() {
-
+    BIT_R(HIGH, BC, 0);
 }
-
+// BIT 0, C
+// Flags: !R0 0 1 - 
 function ExecuteCb0x41() {
-
+    BIT_R(LOW, BC, 0);
 }
-
+// BIT 0, D
+// Flags: !R0 0 1 - 
 function ExecuteCb0x42() {
-
+    BIT_R(HIGH, DE, 0);
 }
-
+// BIT 0, E
+// Flags: !R0 0 1 - 
 function ExecuteCb0x43() {
-
+    BIT_R(LOW, DE, 0);
 }
-
+// BIT 0, H
+// Flags: !R0 0 1 - 
 function ExecuteCb0x44() {
-
+    BIT_R(HIGH, HL, 0);
 }
-
+// BIT 0, L
+// Flags: !R0 0 1 - 
 function ExecuteCb0x45() {
-
+    BIT_R(LOW, HL, 0);
 }
-
+// BIT 0, (HL)
+// Flags: !(HL)0 0 1 - 
 function ExecuteCb0x46() {
-
+    BIT__HL_(0);
 }
-
+// BIT 0, A
+// Flags: !R0 0 1 - 
 function ExecuteCb0x47() {
-
+    BIT_R(HIGH, AF, 0);
 }
-
+// BIT 1, B
+// Flags: !R1 0 1 - 
 function ExecuteCb0x48() {
-
+    BIT_R(HIGH, BC, 1);
 }
-
+// BIT 1, C
+// Flags: !R1 0 1 - 
 function ExecuteCb0x49() {
-
+    BIT_R(LOW, BC, 1);
 }
-
+// BIT 1, D
+// Flags: !R1 0 1 - 
 function ExecuteCb0x4A() {
-
+    BIT_R(HIGH, DE, 1);
 }
-
+// BIT 1, E
+// Flags: !R1 0 1 - 
 function ExecuteCb0x4B() {
-
+    BIT_R(LOW, DE, 1);
 }
-
+// BIT 1, H
+// Flags: !R1 0 1 - 
 function ExecuteCb0x4C() {
-
+    BIT_R(HIGH, HL, 1);
 }
-
+// BIT 1, L
+// Flags: !R1 0 1 - 
 function ExecuteCb0x4D() {
-
+    BIT_R(LOW, HL, 1);
 }
-
+// BIT 1, (HL)
+// Flags: !(HL)1 0 1 - 
 function ExecuteCb0x4E() {
-
+    BIT__HL_(1);
 }
-
+// BIT 1, A
+// Flags: !R1 0 1 - 
 function ExecuteCb0x4F() {
-
+    BIT_R(HIGH, AF, 1);
 }
-
+// BIT 2, B
+// Flags: !R2 0 1 - 
 function ExecuteCb0x50() {
-
+    BIT_R(HIGH, BC, 2);
 }
-
+// BIT 2, C
+// Flags: !R2 0 1 - 
 function ExecuteCb0x51() {
-
+    BIT_R(LOW, BC, 2);
 }
-
+// BIT 2, D
+// Flags: !R2 0 1 - 
 function ExecuteCb0x52() {
-
+    BIT_R(HIGH, DE, 2);
 }
-
+// BIT 2, E
+// Flags: !R2 0 1 -
 function ExecuteCb0x53() {
-
+    BIT_R(LOW, DE, 2);
 }
-
+// BIT 2, H
+// Flags: !R2 0 1 - 
 function ExecuteCb0x54() {
-
+    BIT_R(HIGH, HL, 2);
 }
-
+// BIT 2, L
+// Flags: !R2 0 1 - 
 function ExecuteCb0x55() {
-
+    BIT_R(LOW, HL, 2);
 }
-
+// BIT 2, (HL)
+// Flags: !(HL)2 0 1 - 
 function ExecuteCb0x56() {
-
+    BIT__HL_(2);
 }
-
+// BIT 2, A
+// Flags: !R2 0 1 - 
 function ExecuteCb0x57() {
-
+    BIT_R(HIGH, AF, 2);
 }
-
+// BIT 3, B
+// Flags: !R3 0 1 - 
 function ExecuteCb0x58() {
-
+    BIT_R(HIGH, BC, 3);
 }
-
+// BIT 3, C
+// Flags: !R3 0 1 - 
 function ExecuteCb0x59() {
-
+    BIT_R(LOW, BC, 3);
 }
-
+// BIT 3, D
+// Flags: !R3 0 1 - 
 function ExecuteCb0x5A() {
-
+    BIT_R(HIGH, DE, 3);
 }
-
+// BIT 3, E
+// Flags: !R3 0 1 - 
 function ExecuteCb0x5B() {
-
+    BIT_R(LOW, DE, 3);
 }
-
+// BIT 3, H
+// Flags: !R3 0 1 - 
 function ExecuteCb0x5C() {
-
+    BIT_R(HIGH, HL, 3);
 }
-
+// BIT 3, L
+// Flags: !R3 0 1 - 
 function ExecuteCb0x5D() {
-
+    BIT_R(LOW, HL, 3);
 }
-
+// BIT 3, (HL)
+// Flags: !(HL)3 0 1 - 
 function ExecuteCb0x5E() {
-
+    BIT__HL_(3);
 }
-
+// BIT 3, A
+// Flags: !R3 0 1 - 
 function ExecuteCb0x5F() {
-
+    BIT_R(HIGH, AF, 3);
 }
-
+// BIT 4, B
+// Flags: !R4 0 1 - 
 function ExecuteCb0x60() {
-
+    BIT_R(HIGH, BC, 4);
 }
-
+// BIT 4, C
+// Flags: !R4 0 1 - 
 function ExecuteCb0x61() {
-
+    BIT_R(LOW, BC, 4);
 }
-
+// BIT 4, D
+// Flags: !R4 0 1 - 
 function ExecuteCb0x62() {
-
+    BIT_R(HIGH, DE, 4);
 }
-
+// BIT 4, E
+// Flags: !R4 0 1 - 
 function ExecuteCb0x63() {
-
+    BIT_R(LOW, DE, 4);
 }
-
+// BIT 4, H
+// Flags: !R4 0 1 - 
 function ExecuteCb0x64() {
-
+    BIT_R(HIGH, HL, 4);
 }
-
+// BIT 4, L
+// Flags: !R4 0 1 - 
 function ExecuteCb0x65() {
-
+    BIT_R(LOW, HL, 4);
 }
-
+// BIT 4, (HL)
+// Flags: !(HL)4 0 1 - 
 function ExecuteCb0x66() {
-
+    BIT__HL_(4);
 }
-
+// BIT 4, A
+// Flags: !R4 0 1 -
 function ExecuteCb0x67() {
-
+    BIT_R(HIGH, AF, 4);
 }
-
+// BIT 5, B
+// Flags: !R5 0 1 -
 function ExecuteCb0x68() {
-
+    BIT_R(HIGH, BC, 5);
 }
-
+// BIT 5, C
+// Flags: !R5 0 1 -
 function ExecuteCb0x69() {
-
+    BIT_R(LOW, BC, 5);
 }
-
+// BIT 5, D
+// Flags: !R5 0 1 -
 function ExecuteCb0x6A() {
-
+    BIT_R(HIGH, DE, 5);
 }
-
+// BIT 5, E
+// Flags: !R5 0 1 -
 function ExecuteCb0x6B() {
-
+    BIT_R(LOW, DE, 5);
 }
-
+// BIT 5, H
+// Flags: !R5 0 1 -
 function ExecuteCb0x6C() {
-
+    BIT_R(HIGH, HL, 5);
 }
-
+// BIT 5, L
+// Flags: !R5 0 1 -
 function ExecuteCb0x6D() {
-
+    BIT_R(LOW, HL, 5);
 }
-
+// BIT 5, (HL)
+// Flags: !(HL)5 0 1 -
 function ExecuteCb0x6E() {
-
+    BIT__HL_(5);
 }
-
+// BIT 5, A
+// Flags: !R5 0 1 -
 function ExecuteCb0x6F() {
-
+    BIT_R(HIGH, AF, 5);
 }
-
+// BIT 6, B
+// Flags: !R6 0 1 -
 function ExecuteCb0x70() {
-
+    BIT_R(HIGH, BC, 6);
 }
-
+// BIT 6, C
+// Flags: !R6 0 1 -
 function ExecuteCb0x71() {
-
+    BIT_R(LOW, BC, 6);
 }
-
+// BIT 6, D
+// Flags: !R6 0 1 -
 function ExecuteCb0x72() {
-
+    BIT_R(HIGH, DE, 6);
 }
-
+// BIT 6, E
+// Flags: !R6 0 1 -
 function ExecuteCb0x73() {
-
+    BIT_R(LOW, DE, 6);
 }
-
+// BIT 6, H
+// Flags: !R6 0 1 -
 function ExecuteCb0x74() {
-
+    BIT_R(HIGH, HL, 6);
 }
-
+// BIT 6, L
+// Flags: !R6 0 1 -
 function ExecuteCb0x75() {
-
+    BIT_R(LOW, HL, 6);
 }
-
+// BIT 6, (HL)
+// Flags: !(HL)6 0 1 -
 function ExecuteCb0x76() {
-
+    BIT__HL_(6);
 }
-
+// BIT 6, A
+// Flags: !R6 0 1 -
 function ExecuteCb0x77() {
-
+    BIT_R(HIGH, AF, 6);
 }
-
+// BIT 7, B
+// Flags: !R7 0 1 -
 function ExecuteCb0x78() {
-
+    BIT_R(HIGH, BC, 7);
 }
-
+// BIT 7, C
+// Flags: !R7 0 1 -
 function ExecuteCb0x79() {
-
+    BIT_R(LOW, BC, 7);
 }
-
+// BIT 7, D
+// Flags: !R7 0 1 -
 function ExecuteCb0x7A() {
-
+    BIT_R(HIGH, DE, 7);
 }
-
+// BIT 7, E
+// Flags: !R7 0 1 -
 function ExecuteCb0x7B() {
-
+    BIT_R(LOW, DE, 7);
 }
-
+// BIT 7, H
+// Flags: !R7 0 1 -
 function ExecuteCb0x7C() {
-
+    BIT_R(HIGH, HL, 7);
 }
-
+// BIT 7, L
+// Flags: !R7 0 1 -
 function ExecuteCb0x7D() {
-
+    BIT_R(LOW, HL, 7);
 }
-
+// BIT 7, (HL)
+// Flags: !(HL)7 0 1 -
 function ExecuteCb0x7E() {
-
+    BIT__HL_(7);
 }
-
+// BIT 7, A
+// Flags: !R7 0 1 -
 function ExecuteCb0x7F() {
-
+    BIT_R(HIGH, AF, 7);
 }
 // RES 0, B
 // Flags: - - - -
 function ExecuteCb0x80() {
-    RES_R_b(HIGH, BC, 0);
+    RES_R(HIGH, BC, 0);
 }
 // RES 0, C
 // Flags: - - - -
 function ExecuteCb0x81() {
-    RES_R_b(LOW, BC, 0);
+    RES_R(LOW, BC, 0);
 }
 // RES 0, D
 // Flags: - - - -
 function ExecuteCb0x82() {
-    RES_R_b(HIGH, DE, 0);
+    RES_R(HIGH, DE, 0);
 }
 // RES 0, E
 // Flags: - - - -
 function ExecuteCb0x83() {
-    RES_R_b(LOW, DE, 0);
+    RES_R(LOW, DE, 0);
 }
 // RES 0, H
 // Flags: - - - -
 function ExecuteCb0x84() {
-    RES_R_b(HIGH, HL, 0);
+    RES_R(HIGH, HL, 0);
 }
 // RES 0, L
 // Flags: - - - -
 function ExecuteCb0x85() {
-    RES_R_b(LOW, HL, 0);
+    RES_R(LOW, HL, 0);
 }
 // RES 0, (HL)
 // Flags: - - - -
 function ExecuteCb0x86() {
-    RES__HL__b(0);
+    RES__HL_(0);
 }
 // RES 0, A
 // Flags: - - - -
 function ExecuteCb0x87() {
-    RES_R_b(HIGH, AF, 0);
+    RES_R(HIGH, AF, 0);
 }
 // RES 1, B
 // Flags: - - - -
 function ExecuteCb0x88() {
-    RES_R_b(HIGH, BC, 1);
+    RES_R(HIGH, BC, 1);
 }
 // RES 1, C
 // Flags: - - - -
 function ExecuteCb0x89() {
-    RES_R_b(LOW, BC, 1);
+    RES_R(LOW, BC, 1);
 }
 // RES 1, D
 // Flags: - - - -
 function ExecuteCb0x8A() {
-    RES_R_b(HIGH, DE, 1);
+    RES_R(HIGH, DE, 1);
 }
 // RES 1, E
 // Flags: - - - -
 function ExecuteCb0x8B() {
-    RES_R_b(LOW, DE, 1);
+    RES_R(LOW, DE, 1);
 }
 // RES 1, H
 // Flags: - - - -
 function ExecuteCb0x8C() {
-    RES_R_b(HIGH, HL, 1);
+    RES_R(HIGH, HL, 1);
 }
 // RES 1, L
 // Flags: - - - -
 function ExecuteCb0x8D() {
-    RES_R_b(LOW, HL, 1);
+    RES_R(LOW, HL, 1);
 }
 // RES 1, (HL)
 // Flags: - - - -
 function ExecuteCb0x8E() {
-    RES__HL__b(1);
+    RES__HL_(1);
 }
 // RES 1, A
 // Flags: - - - -
 function ExecuteCb0x8F() {
-    RES_R_b(HIGH, AF, 1);
+    RES_R(HIGH, AF, 1);
 }
 // RES 2, B
 // Flags: - - - -
 function ExecuteCb0x90() {
-    RES_R_b(HIGH, BC, 2);
+    RES_R(HIGH, BC, 2);
 }
 // RES 2, C
 // Flags: - - - -
 function ExecuteCb0x91() {
-    RES_R_b(LOW, BC, 2);
+    RES_R(LOW, BC, 2);
 }
 // RES 2, D
 // Flags: - - - -
 function ExecuteCb0x92() {
-    RES_R_b(HIGH, DE, 2);
+    RES_R(HIGH, DE, 2);
 }
 // RES 2, E
 // Flags: - - - -
 function ExecuteCb0x93() {
-    RES_R_b(LOW, DE, 2);
+    RES_R(LOW, DE, 2);
 }
 // RES 2, H
 // Flags: - - - -
 function ExecuteCb0x94() {
-    RES_R_b(HIGH, HL, 2);
+    RES_R(HIGH, HL, 2);
 }
 // RES 2, L
 // Flags: - - - -
 function ExecuteCb0x95() {
-    RES_R_b(LOW, HL, 2);
+    RES_R(LOW, HL, 2);
 }
 // RES 2, (HL)
 // Flags: - - - -
 function ExecuteCb0x96() {
-    RES__HL__b(2);
+    RES__HL_(2);
 }
 // RES 2, A
 // Flags: - - - -
 function ExecuteCb0x97() {
-    RES_R_b(HIGH, AF, 2);
+    RES_R(HIGH, AF, 2);
 }
 // RES 3, B
 // Flags: - - - -
 function ExecuteCb0x98() {
-    RES_R_b(HIGH, BC, 3);
+    RES_R(HIGH, BC, 3);
 }
 // RES 3, C
 // Flags: - - - -
 function ExecuteCb0x99() {
-    RES_R_b(LOW, BC, 3);
+    RES_R(LOW, BC, 3);
 }
 // RES 3, D
 // Flags: - - - -
 function ExecuteCb0x9A() {
-    RES_R_b(HIGH, DE, 3);
+    RES_R(HIGH, DE, 3);
 }
 // RES 3, E
 // Flags: - - - -
 function ExecuteCb0x9B() {
-    RES_R_b(LOW, DE, 3);
+    RES_R(LOW, DE, 3);
 }
 // RES 3, H
 // Flags: - - - -
 function ExecuteCb0x9C() {
-    RES_R_b(HIGH, HL, 3);
+    RES_R(HIGH, HL, 3);
 }
 // RES 3, L
 // Flags: - - - -
 function ExecuteCb0x9D() {
-    RES_R_b(LOW, HL, 3);
+    RES_R(LOW, HL, 3);
 }
 // RES 3, (HL)
 // Flags: - - - -
 function ExecuteCb0x9E() {
-    RES__HL__b(3);
+    RES__HL_(3);
 }
 // RES 3, A
 // Flags: - - - -
 function ExecuteCb0x9F() {
-    RES_R_b(HIGH, AF, 3);
+    RES_R(HIGH, AF, 3);
 }
 // RES 4, B
 // Flags: - - - -
 function ExecuteCb0xA0() {
-    RES_R_b(HIGH, BC, 4);
+    RES_R(HIGH, BC, 4);
 }
 // RES 4, C
 // Flags: - - - -
 function ExecuteCb0xA1() {
-    RES_R_b(LOW, BC, 4);
+    RES_R(LOW, BC, 4);
 }
 // RES 4, D
 // Flags: - - - -
 function ExecuteCb0xA2() {
-    RES_R_b(HIGH, DE, 4);
+    RES_R(HIGH, DE, 4);
 }
 // RES 4, E
 // Flags: - - - -
 function ExecuteCb0xA3() {
-    RES_R_b(LOW, DE, 4);
+    RES_R(LOW, DE, 4);
 }
 // RES 4, H
 // Flags: - - - -
 function ExecuteCb0xA4() {
-    RES_R_b(HIGH, HL, 4);
+    RES_R(HIGH, HL, 4);
 }
 // RES 4, L
 // Flags: - - - -
 function ExecuteCb0xA5() {
-    RES_R_b(LOW, HL, 4);
+    RES_R(LOW, HL, 4);
 }
 // RES 4, (HL)
 // Flags: - - - -
 function ExecuteCb0xA6() {
-    RES__HL__b(4);
+    RES__HL_(4);
 }
 // RES 4, A
 // Flags: - - - -
 function ExecuteCb0xA7() {
-    RES_R_b(HIGH, AF, 4);
+    RES_R(HIGH, AF, 4);
 }
 // RES 5, B
 // Flags: - - - -
 function ExecuteCb0xA8() {
-    RES_R_b(HIGH, BC, 5);
+    RES_R(HIGH, BC, 5);
 }
 // RES 5, C
 // Flags: - - - -
 function ExecuteCb0xA9() {
-    RES_R_b(LOW, BC, 5);
+    RES_R(LOW, BC, 5);
 }
 // RES 5, D
 // Flags: - - - -
 function ExecuteCb0xAA() {
-    RES_R_b(HIGH, DE, 5);
+    RES_R(HIGH, DE, 5);
 }
 // RES 5, E
 // Flags: - - - -
 function ExecuteCb0xAB() {
-    RES_R_b(LOW, DE, 5);
+    RES_R(LOW, DE, 5);
 }
 // RES 5, H
 // Flags: - - - -
 function ExecuteCb0xAC() {
-    RES_R_b(HIGH, HL, 5);
+    RES_R(HIGH, HL, 5);
 }
 // RES 5, L
 // Flags: - - - -
 function ExecuteCb0xAD() {
-    RES_R_b(LOW, HL, 5);
+    RES_R(LOW, HL, 5);
 }
 // RES 5, (HL)
 // Flags: - - - -
 function ExecuteCb0xAE() {
-    RES__HL__b(5);
+    RES__HL_(5);
 }
 // RES 5, A
 // Flags: - - - -
 function ExecuteCb0xAF() {
-    RES_R_b(HIGH, AF, 5);
+    RES_R(HIGH, AF, 5);
 }
 // RES 6, B
 // Flags: - - - -
 function ExecuteCb0xB0() {
-    RES_R_b(HIGH, BC, 6);
+    RES_R(HIGH, BC, 6);
 }
 // RES 6, C
 // Flags: - - - -
 function ExecuteCb0xB1() {
-    RES_R_b(LOW, BC, 6);
+    RES_R(LOW, BC, 6);
 }
 // RES 6, D
 // Flags: - - - -
 function ExecuteCb0xB2() {
-    RES_R_b(HIGH, DE, 6);
+    RES_R(HIGH, DE, 6);
 }
 // RES 6, E
 // Flags: - - - -
 function ExecuteCb0xB3() {
-    RES_R_b(LOW, DE, 6);
+    RES_R(LOW, DE, 6);
 }
 // RES 6, H
 // Flags: - - - -
 function ExecuteCb0xB4() {
-    RES_R_b(HIGH, HL, 6);
+    RES_R(HIGH, HL, 6);
 }
 // RES 6, L
 // Flags: - - - -
 function ExecuteCb0xB5() {
-    RES_R_b(LOW, HL, 6);
+    RES_R(LOW, HL, 6);
 }
 // RES 6, (HL)
 // Flags: - - - -
 function ExecuteCb0xB6() {
-    RES__HL__b(6);
+    RES__HL_(6);
 }
 // RES 6, A
 // Flags: - - - -
 function ExecuteCb0xB7() {
-    RES_R_b(HIGH, AF, 6);
+    RES_R(HIGH, AF, 6);
 }
 // RES 7, B
 // Flags: - - - -
 function ExecuteCb0xB8() {
-    RES_R_b(HIGH, BC, 7);
+    RES_R(HIGH, BC, 7);
 }
 // RES 7, C
 // Flags: - - - -
 function ExecuteCb0xB9() {
-    RES_R_b(LOW, BC, 7);
+    RES_R(LOW, BC, 7);
 }
 // RES 7, D
 // Flags: - - - -
 function ExecuteCb0xBA() {
-    RES_R_b(HIGH, DE, 7);
+    RES_R(HIGH, DE, 7);
 }
 // RES 7, E
 // Flags: - - - -
 function ExecuteCb0xBB() {
-    RES_R_b(LOW, DE, 7);
+    RES_R(LOW, DE, 7);
 }
 // RES 7, H
 // Flags: - - - -
 function ExecuteCb0xBC() {
-    RES_R_b(HIGH, AF, 7);
+    RES_R(HIGH, AF, 7);
 }
 // RES 7, L
 // Flags: - - - -
 function ExecuteCb0xBD() {
-    RES_R_b(LOW, HL, 7);
+    RES_R(LOW, HL, 7);
 }
 // RES 7, (HL)
 // Flags: - - - -
 function ExecuteCb0xBE() {
-    RES__HL__b(7);
+    RES__HL_(7);
 }
 // RES 7, A
 // Flags: - - - -
 function ExecuteCb0xBF() {
-    RES_R_b(HIGH, AF, 7);
+    RES_R(HIGH, AF, 7);
 }
 // SET 0, B
 // Flags: - - - -
 function ExecuteCb0xC0() {
-    SET_R_b(HIGH, BC, 0);
+    SET_R(HIGH, BC, 0);
 }
 // SET 0, C
 // Flags: - - - -
 function ExecuteCb0xC1() {
-    SET_R_b(LOW, BC, 0);
+    SET_R(LOW, BC, 0);
 }
 // SET 0, D
 // Flags: - - - -
 function ExecuteCb0xC2() {
-    SET_R_b(HIGH, DE, 0);
+    SET_R(HIGH, DE, 0);
 }
 // SET 0, E
 // Flags: - - - -
 function ExecuteCb0xC3() {
-    SET_R_b(LOW, DE, 0);
+    SET_R(LOW, DE, 0);
 }
 // SET 0, H
 // Flags: - - - -
 function ExecuteCb0xC4() {
-    SET_R_b(HIGH, HL, 0);
+    SET_R(HIGH, HL, 0);
 }
 // SET 0, L
 // Flags: - - - -
 function ExecuteCb0xC5() {
-    SET_R_b(LOW, HL, 0);
+    SET_R(LOW, HL, 0);
 }
 // SET 0, (HL)
 // Flags: - - - -
 function ExecuteCb0xC6() {
-    SET__HL__b(0);
+    SET__HL_(0);
 }
 // SET 0, A
 // Flags: - - - -
 function ExecuteCb0xC7() {
-    SET_R_b(HIGH, AF, 0);
+    SET_R(HIGH, AF, 0);
 }
 // SET 1, B
 // Flags: - - - -
 function ExecuteCb0xC8() {
-    SET_R_b(HIGH, BC, 1);
+    SET_R(HIGH, BC, 1);
 }
 // SET 1, C
 // Flags: - - - -
 function ExecuteCb0xC9() {
-    SET_R_b(LOW, BC, 1);
+    SET_R(LOW, BC, 1);
 }
 // SET 1, D
 // Flags: - - - -
 function ExecuteCb0xCA() {
-    SET_R_b(HIGH, DE, 1);
+    SET_R(HIGH, DE, 1);
 }
 // SET 1, E
 // Flags: - - - -
 function ExecuteCb0xCB() {
-    SET_R_b(LOW, DE, 1);
+    SET_R(LOW, DE, 1);
 }
 // SET 1, H
 // Flags: - - - -
 function ExecuteCb0xCC() {
-    SET_R_b(HIGH, HL, 1);
+    SET_R(HIGH, HL, 1);
 }
 // SET 1, L
 // Flags: - - - -
 function ExecuteCb0xCD() {
-    SET_R_b(LOW, HL, 1);
+    SET_R(LOW, HL, 1);
 }
 // SET 1, (HL)
 // Flags: - - - -
 function ExecuteCb0xCE() {
-    SET__HL__b(1);
+    SET__HL_(1);
 }
 // SET 1, A
 // Flags: - - - -
 function ExecuteCb0xCF() {
-    SET_R_b(HIGH, AF, 1);
+    SET_R(HIGH, AF, 1);
 }
 // SET 2, B
 // Flags: - - - -
 function ExecuteCb0xD0() {
-    SET_R_b(HIGH, BC, 2);
+    SET_R(HIGH, BC, 2);
 }
 // SET 2, C
 // Flags: - - - -
 function ExecuteCb0xD1() {
-    SET_R_b(LOW, BC, 2);
+    SET_R(LOW, BC, 2);
 }
 // SET 2, D
 // Flags: - - - -
 function ExecuteCb0xD2() {
-    SET_R_b(HIGH, DE, 2);
+    SET_R(HIGH, DE, 2);
 }
 // SET 2, E
 // Flags: - - - -
 function ExecuteCb0xD3() {
-    SET_R_b(LOW, DE, 2);
+    SET_R(LOW, DE, 2);
 }
 // SET 2, H
 // Flags: - - - -
 function ExecuteCb0xD4() {
-    SET_R_b(HIGH, HL, 2);
+    SET_R(HIGH, HL, 2);
 }
 // SET 2, L
 // Flags: - - - -
 function ExecuteCb0xD5() {
-    SET_R_b(LOW, HL, 2);
+    SET_R(LOW, HL, 2);
 }
 // SET 2, (HL)
 // Flags: - - - -
 function ExecuteCb0xD6() {
-    SET__HL__b(2);
+    SET__HL_(2);
 }
 // SET 2, A
 // Flags: - - - -
 function ExecuteCb0xD7() {
-    SET_R_b(HIGH, AF, 2);
+    SET_R(HIGH, AF, 2);
 }
 // SET 3, B
 // Flags: - - - -
 function ExecuteCb0xD8() {
-    SET_R_b(HIGH, BC, 3);
+    SET_R(HIGH, BC, 3);
 }
 // SET 3, C
 // Flags: - - - -
 function ExecuteCb0xD9() {
-    SET_R_b(LOW, BC, 3);
+    SET_R(LOW, BC, 3);
 }
 // SET 3, D
 // Flags: - - - -
 function ExecuteCb0xDA() {
-    SET_R_b(HIGH, DE, 3);
+    SET_R(HIGH, DE, 3);
 }
 // SET 3, E
 // Flags: - - - -
 function ExecuteCb0xDB() {
-    SET_R_b(LOW, DE, 3);
+    SET_R(LOW, DE, 3);
 }
 // SET 3, H
 // Flags: - - - -
 function ExecuteCb0xDC() {
-    SET_R_b(HIGH, HL, 3);
+    SET_R(HIGH, HL, 3);
 }
 // SET 3, L
 // Flags: - - - -
 function ExecuteCb0xDD() {
-    SET_R_b(LOW, HL, 3);
+    SET_R(LOW, HL, 3);
 }
 // SET 3, (HL)
 // Flags: - - - -
 function ExecuteCb0xDE() {
-    SET__HL__b(3);
+    SET__HL_(3);
 }
 // SET 3, A
 // Flags: - - - -
 function ExecuteCb0xDF() {
-    SET_R_b(HIGH, AF, 3);
+    SET_R(HIGH, AF, 3);
 }
 // SET 4, B
 // Flags: - - - -
 function ExecuteCb0xE0() {
-    SET_R_b(HIGH, BC, 4);
+    SET_R(HIGH, BC, 4);
 }
 // SET 4, C
 // Flags: - - - -
 function ExecuteCb0xE1() {
-    SET_R_b(LOW, BC, 4);
+    SET_R(LOW, BC, 4);
 }
 // SET 4, D
 // Flags: - - - -
 function ExecuteCb0xE2() {
-    SET_R_b(HIGH, DE, 4);
+    SET_R(HIGH, DE, 4);
 }
 // SET 4, E
 // Flags: - - - -
 function ExecuteCb0xE3() {
-    SET_R_b(LOW, DE, 4);
+    SET_R(LOW, DE, 4);
 }
 // SET 4, H
 // Flags: - - - -
 function ExecuteCb0xE4() {
-    SET_R_b(HIGH, HL, 4);
+    SET_R(HIGH, HL, 4);
 }
 // SET 4, L
 // Flags: - - - -
 function ExecuteCb0xE5() {
-    SET_R_b(LOW, HL, 4);
+    SET_R(LOW, HL, 4);
 }
 // SET 4, (HL)
 // Flags: - - - -
 function ExecuteCb0xE6() {
-    SET__HL__b(4);
+    SET__HL_(4);
 }
 // SET 4, A
 // Flags: - - - -
 function ExecuteCb0xE7() {
-    SET_R_b(HIGH, AF, 4);
+    SET_R(HIGH, AF, 4);
 }
 // SET 5, B
 // Flags: - - - -
 function ExecuteCb0xE8() {
-    SET_R_b(HIGH, BC, 5);
+    SET_R(HIGH, BC, 5);
 }
 // SET 5, C
 // Flags: - - - -
 function ExecuteCb0xE9() {
-    SET_R_b(LOW, BC, 5);
+    SET_R(LOW, BC, 5);
 }
 // SET 5, D
 // Flags: - - - -
 function ExecuteCb0xEA() {
-    SET_R_b(HIGH, DE, 5);
+    SET_R(HIGH, DE, 5);
 }
 // SET 5, E
 // Flags: - - - -
 function ExecuteCb0xEB() {
-    SET_R_b(LOW, DE, 5);
+    SET_R(LOW, DE, 5);
 }
 // SET 5, H
 // Flags: - - - -
 function ExecuteCb0xEC() {
-    SET_R_b(HIGH, HL, 5);
+    SET_R(HIGH, HL, 5);
 }
 // SET 5, L
 // Flags: - - - -
 function ExecuteCb0xED() {
-    SET_R_b(LOW, HL, 5);
+    SET_R(LOW, HL, 5);
 }
 // SET 5, (HL)
 // Flags: - - - -
 function ExecuteCb0xEE() {
-    SET__HL__b(5);
+    SET__HL_(5);
 }
 // SET 5, A
 // Flags: - - - -
 function ExecuteCb0xEF() {
-    SET_R_b(HIGH, AF, 5);
+    SET_R(HIGH, AF, 5);
 }
 // SET 6, B
 // Flags: - - - -
 function ExecuteCb0xF0() {
-    SET_R_b(HIGH, BC, 6);
+    SET_R(HIGH, BC, 6);
 }
 // SET 6, C
 // Flags: - - - -
 function ExecuteCb0xF1() {
-    SET_R_b(LOW, BC, 6);
+    SET_R(LOW, BC, 6);
 }
 // SET 6, D
 // Flags: - - - -
 function ExecuteCb0xF2() {
-    SET_R_b(HIGH, DE, 6);
+    SET_R(HIGH, DE, 6);
 }
 // SET 6, E
 // Flags: - - - -
 function ExecuteCb0xF3() {
-    SET_R_b(LOW, DE, 6);
+    SET_R(LOW, DE, 6);
 }
 // SET 6, H
 // Flags: - - - -
 function ExecuteCb0xF4() {
-    SET_R_b(HIGH, HL, 6);
+    SET_R(HIGH, HL, 6);
 }
 // SET 6, L
 // Flags: - - - -
 function ExecuteCb0xF5() {
-    SET_R_b(LOW, HL, 6);
+    SET_R(LOW, HL, 6);
 }
 // SET 6, (HL)
 // Flags: - - - -
 function ExecuteCb0xF6() {
-    SET__HL__b(6);
+    SET__HL_(6);
 }
 // SET 6, A
 // Flags: - - - -
 function ExecuteCb0xF7() {
-    SET_R_b(HIGH, AF, 6);
+    SET_R(HIGH, AF, 6);
 }
 // SET 7, B
 // Flags: - - - -
 function ExecuteCb0xF8() {
-    SET_R_b(HIGH, BC, 7);
+    SET_R(HIGH, BC, 7);
 }
 // SET 7, C
 // Flags: - - - -
 function ExecuteCb0xF9() {
-    SET_R_b(LOW, BC, 7);
+    SET_R(LOW, BC, 7);
 }
 // SET 7, D
 // Flags: - - - -
 function ExecuteCb0xFA() {
-    SET_R_b(HIGH, DE, 7);
+    SET_R(HIGH, DE, 7);
 }
 // SET 7, E
 // Flags: - - - -
 function ExecuteCb0xFB() {
-    SET_R_b(LOW, DE, 7);
+    SET_R(LOW, DE, 7);
 }
 // SET 7, H
 // Flags: - - - -
 function ExecuteCb0xFC() {
-    SET_R_b(HIGH, HL, 7);
+    SET_R(HIGH, HL, 7);
 }
 // SET 7, L
 // Flags: - - - -
 function ExecuteCb0xFD() {
-    SET_R_b(LOW, HL, 7);
+    SET_R(LOW, HL, 7);
 }
 // SET 7, (HL)
 // Flags: - - - -
 function ExecuteCb0xFE() {
-    SET__HL__b(7);
+    SET__HL_(7);
 }
 // SET 7, A
 // Flags: - - - -
 function ExecuteCb0xFF() {
-    SET_R_b(HIGH, AF, 7);
+    SET_R(HIGH, AF, 7);
 }
