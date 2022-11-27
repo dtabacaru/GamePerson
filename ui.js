@@ -56,16 +56,16 @@ function UpdateNextVarUI() {
 // Updates the Debug Fetch/Execute UI elements
 //
 function UpdateDebugUI() {
-    document.getElementById("InstructionVar").innerHTML = InstructionStrings[Instruction];
-    document.getElementById("OpcodeVar").innerHTML = NumberToHexString(Instruction, 2);
-    document.getElementById("NextVar").innerHTML = NumberToHexString(Rom.getUint16(Read16BitReg(PC), false), 4);
+    document.getElementById("InstructionVar")   .innerHTML = InstructionStrings[Instruction];
+    document.getElementById("OpcodeVar")        .innerHTML = NumberToHexString(Instruction, 2);
+    document.getElementById("NextVar")          .innerHTML = NumberToHexString(Rom.getUint16(Read16BitReg(PC), false), 4);
     document.getElementById("ProgramCounterVar").innerHTML = NumberToHexString(Read16BitReg(PC), 4);
-    document.getElementById("StackPointerVar").innerHTML = NumberToHexString(Read16BitReg(SP), 4);
-    document.getElementById("AFVar").innerHTML = NumberToHexString(Read16BitReg(AF), 4);
-    document.getElementById("BCVar").innerHTML = NumberToHexString(Read16BitReg(BC), 4);
-    document.getElementById("DEVar").innerHTML = NumberToHexString(Read16BitReg(DE), 4);
-    document.getElementById("HLVar").innerHTML = NumberToHexString(Read16BitReg(HL), 4);
+    document.getElementById("StackPointerVar")  .innerHTML = NumberToHexString(Read16BitReg(SP), 4);
+    document.getElementById("AFVar")            .innerHTML = NumberToHexString(Read16BitReg(AF), 4);
+    document.getElementById("BCVar")            .innerHTML = NumberToHexString(Read16BitReg(BC), 4);
+    document.getElementById("DEVar")            .innerHTML = NumberToHexString(Read16BitReg(DE), 4);
+    document.getElementById("HLVar")            .innerHTML = NumberToHexString(Read16BitReg(HL), 4);
 
-    document.getElementById("FetchButton").disabled = !document.getElementById("FetchButton").disabled;
+    document.getElementById("FetchButton")  .disabled = !document.getElementById("FetchButton").disabled;
     document.getElementById("ExecuteButton").disabled = !document.getElementById("ExecuteButton").disabled;
 }
